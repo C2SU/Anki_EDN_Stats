@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# User data (regenerated at runtime)
+user_state.json
+edn_config.json
+
+# Development
+.vscode/
+.idea/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
