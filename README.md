@@ -1,6 +1,6 @@
 # EDN Progress - Statistiques pour Anki EDN
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Anki](https://img.shields.io/badge/Anki-23.10%2B-green) ![License](https://img.shields.io/badge/license-MIT-orange)
+![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Anki](https://img.shields.io/badge/Anki-23.10%2B-green) ![License](https://img.shields.io/badge/license-CC%20BY--SA%204.0-orange)
 
 ## 📊 Vue d'ensemble
 
@@ -9,9 +9,9 @@
 ## ✨ Fonctionnalités
 
 ### Graphiques Interactifs
-- 📈 **Visualisation par items** : Progression détaillée item par item (EDN 001-300+)
+- 📈 **Visualisation par items** : Progression détaillée item par item (300+)
 - 🧬 **Visualisation par matières** : Filtrage par spécialités médicales
-- 🔍 **Visualisation SDD/SSDD** : Sous-items et situations de départ
+- 🔍 **Visualisation SDD/SSDD** : situations de départ
 
 ### Métriques Avancées
 - 🎯 **Difficulté FSRS intégrée** : Utilise le système de difficulté FSRS natif d'Anki 23.10+
