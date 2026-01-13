@@ -1,0 +1,1740 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>EDN Progress — Statistiques</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <h1>EDN Progress</h1>
+    <style>
+      /* Inline override for specific requests */
+      .modern-card {
+        cursor: pointer !important;
+        user-select: none;
+        border: 1px solid #ccc;
+        transition: all 0.2s ease;
+      }
+
+      .modern-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        border-color: #2c7bb6;
+      }
+
+      .modern-card:active {
+        transform: scale(0.99);
+      }
+
+      .card-title {
+        font-weight: 600 !important;
+        font-size: 1.2em;
+        text-align: center;
+        margin-bottom: 12px;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 8px;
+        padding-top: 12px;
+      }
+
+      .modern-card {
+        position: relative;
+      }
+
+      .exclude-btn {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: rgba(150, 60, 60, 0.6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        padding: 0;
+        margin: 0;
+        opacity: 0.5;
+        transition: opacity 0.2s, background 0.2s;
+      }
+
+      .exclude-btn::before {
+        content: '✕';
+        position: relative;
+        top: -1px;
+      }
+
+      .exclude-btn:hover {
+        background: #c62828;
+        opacity: 1;
+      }
+
+      .add-item-btn {
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        line-height: 24px;
+        padding: 0;
+        margin-left: auto;
+      }
+
+      .add-item-btn:hover {
+        background: #388e3c;
+      }
+
+      /* Fix text overflow in cards */
+      .modern-card .card-title {
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+
+      .modern-card>div {
+        font-size: 13px;
+      }
+
+      /* Dark mode overrides */
+      body.nightMode .modern-card {
+        border-color: #444;
+        background: #3a3a3a;
+      }
+
+      body.nightMode .modern-card:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        border-color: #64b5f6;
+      }
+
+      body.nightMode .card-title {
+        border-bottom-color: #555;
+        color: #fff;
+      }
+
+      /* Sort Button feedback */
+      .sort-controls button {
+        padding: 6px 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .sort-controls button:active {
+        background: #ddd;
+      }
+
+      /* Custom Dropdown for Subjects */
+      .custom-dropdown {
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+      }
+
+      .dropdown-trigger {
+        background: #f0f0f0;
+        border: 1px solid #ccc;
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        min-width: 120px;
+        font-size: 13px;
+        text-align: left;
+        color: #333;
+      }
+
+      body.nightMode .dropdown-trigger {
+        background: #2a2a2a;
+        color: #ddd;
+        border-color: #555;
+      }
+
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        min-width: 200px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 8px;
+      }
+
+      body.nightMode .dropdown-content {
+        background: #2a2a2a;
+        border-color: #555;
+        color: #ddd;
+      }
+
+      .dropdown-content label {
+        display: block;
+        padding: 4px 0;
+        cursor: pointer;
+        white-space: nowrap;
+        font-size: 13px;
+      }
+
+      .dropdown-content input {
+        margin-right: 8px;
+      }
+
+      .dropdown-trigger::after {
+        content: ' ▼';
+        float: right;
+        font-size: 10px;
+        margin-top: 4px;
+      }
+    </style>
+    <!-- Tabs removed as requested -->
+    <div class="top-controls">
+      <label>Afficher : <select id="scopeSelect">
+          <option value="items">Items</option>
+          <option value="sdd">SDD</option>
+          <option value="subject">Matières</option>
+        </select></label>
+      <label>Rang : <select id="rangMode">
+          <option value="all">Tous</option>
+          <option value="onlyA">Rang A</option>
+          <option value="notA">Hors A</option>
+        </select></label>
+      <label><input id="includeChildren" type="checkbox"> Inclure enfants</label>
+      <div id="filterBySubjectContainer" style="display: inline-block; margin-left: 8px;">
+        <label><input id="filterBySubject" type="checkbox"> Par matières</label>
+      </div>
+      <div id="subjectFilterLabel" style="margin-left:8px; display:none;">
+        <div class="custom-dropdown" id="subjectDropdown">
+          <div class="dropdown-trigger" id="subjectTrigger">Matières (Tout)</div>
+          <div class="dropdown-content" id="subjectList">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+      <div style="border-left:1px solid rgba(255,255,255,0.3); height:20px; margin:0 8px;"></div>
+      <label>Graphique :
+        <select id="chartMetric">
+          <option value="mastery">Maîtrise</option>
+          <option value="difficulty">Difficulté</option>
+          <option value="studied_ratio">Ratio Appris/Désuspendu</option>
+          <option value="studied_total_ratio">Ratio Appris/Total</option>
+          <option value="unsuspended_share">Part Désuspendue</option>
+        </select>
+      </label>
+      <button id="settingsBtn" style="background:none; border:none; cursor:pointer;" title="Paramètres">⚙️</button>
+      <button id="applyBtn">Appliquer</button>
+      <button id="exportCsv" style="background:rgba(255,255,255,0.2); margin-left:auto;">CSV</button>
+    </div>
+  </header>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
+    <div
+      style="background:#fff; color:#000; padding:20px; border-radius:12px; width:550px; max-height:80vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:15px; font-size:1.3em;">
+        Paramètres</h3>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+
+        <!-- Column 1: Thresholds & Colors -->
+        <div>
+          <h4 style="margin:0 0 10px 0; color:#2c7bb6; border-bottom:1px solid #eee; padding-bottom:5px;">Seuils de
+            Couleurs</h4>
+
+          <label style="display:block; margin-bottom:8px;">
+            <span style="font-weight:600;">Seuil Maîtrise ("Bon" si cartes matures > %)</span>
+            <input type="number" id="colorThMastery" value="0.7" step="0.05" min="0" max="1"
+              style="width:100%; padding:6px; box-sizing:border-box;">
+          </label>
+
+          <label style="display:block; margin-bottom:8px;">
+            <span style="font-weight:600;">Seuil Ratio Appris / Désuspendu ("Bon" si > %)</span>
+            <input type="number" id="colorThRatio" value="0.7" step="0.05" min="0" max="1"
+              style="width:100%; padding:6px; box-sizing:border-box;">
+          </label>
+
+          <label style="display:block; margin-bottom:8px;">
+            <span style="font-weight:600;">Seuil Ratio Appris / Total</span>
+            <small style="color:#666; display:block;">("Bon" si > %)</small>
+            <input type="number" id="colorThTotalRatio" value="0.6" step="0.05" min="0" max="1"
+              style="width:100%; padding:6px; box-sizing:border-box;">
+          </label>
+
+          <label style="display:block; margin-bottom:8px;">
+            <span style="font-weight:600;">Seuil Critique Difficulté</span>
+            <input type="number" id="critThresholdInput" value="0.8" step="0.05" min="0" max="1"
+              style="width:100%; padding:6px; box-sizing:border-box;">
+            <small style="color:#666; display:block;">Marqué critique si > ce seuil</small>
+          </label>
+        </div>
+
+        <!-- Column 2: Analysis & Filtering -->
+        <div>
+          <h4 style="margin:0 0 10px 0; color:#2c7bb6; border-bottom:1px solid #eee; padding-bottom:5px;">Analyse &
+            Filtres</h4>
+
+          <label style="display:block; margin-bottom:8px;">
+            <span style="font-weight:600;">Fenêtre d'analyse (Jours)</span>
+            <input type="number" id="windowDaysInput" value="1000"
+              style="width:100%; padding:6px; box-sizing:border-box;">
+          </label>
+
+          <label style="display:block; margin-bottom:8px;">
+            <span style="font-weight:600;">Seuil Maîtrise (Jours)</span>
+            <input type="number" id="matureIvlInput" value="21" style="width:100%; padding:6px; box-sizing:border-box;">
+            <small style="color:#666; display:block;">IVL min pour être "Mature"</small>
+          </label>
+
+          <label style="display:block; margin-bottom:8px;">
+            <span style="font-weight:600;">Seuil recoupement Matière</span>
+            <input type="number" id="subjectOverlapThreshold" value="0.15" step="0.01" min="0" max="1"
+              style="width:100%; padding:6px; box-sizing:border-box;">
+            <small style="color:#666; display:block;">Ratio min de cartes avec tag matière (0-1)</small>
+          </label>
+
+          <div style="margin-top:10px;">
+            <span style="font-weight:600; display:block; margin-bottom:5px;">Masquer si Suspendu > N%</span>
+            <div style="display:flex; gap:10px;">
+              <label style="font-size:12px;">Items <input type="number" id="threshItemsInput" value="0.4" step="0.1"
+                  style="width:40px;"></label>
+              <label style="font-size:12px;">SDD <input type="number" id="threshSddInput" value="0.5" step="0.1"
+                  style="width:40px;"></label>
+              <label style="font-size:12px;">Mat. <input type="number" id="threshSubjInput" value="0.4" step="0.1"
+                  style="width:40px;"></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject Management Section remains -->
+
+      <!-- NEW: Subject Management Section -->
+      <div style="margin-top:20px;">
+        <h4 style="margin:0 0 10px 0; color:#2c7bb6; border-bottom:1px solid #eee; padding-bottom:5px;">
+          Gestion des Matières affichées
+        </h4>
+        <small style="color:#666; display:block; margin-bottom:8px;">
+          Les matières cochées seront affichées en mode "Matières".<br>
+          Par défaut, toutes sont cochées. Décochez pour masquer certaines matières.
+        </small>
+
+        <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+          <label>
+            <input type="checkbox" id="showSubjectChildren"> Afficher enfants des matières
+          </label>
+          <div>
+            <button type="button" id="selectStandardSubjects"
+              style="font-size:11px; padding:4px 8px; background:#1565c0; color:white; border:1px solid #0d47a1; border-radius:4px; margin-right:5px;">Standard
+              (32)</button>
+            <button type="button" id="selectAllSubjects" style="font-size:11px; padding:4px 8px;">Tout</button>
+            <button type="button" id="selectNoneSubjects" style="font-size:11px; padding:4px 8px;">Aucun</button>
+          </div>
+        </div>
+
+        <div id="subjectCheckboxList"
+          style="max-height:150px; overflow-y:auto; border:1px solid #ddd; padding:8px; background:#f9f9f9; border-radius:4px;">
+          <!-- Populated dynamically -->
+          <p style="color:#999; font-style:italic;">Chargement...</p>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label style="font-size:12px;">
+            <strong>Preset:</strong>
+            <select id="subjectPreset" style="margin-left:5px; padding:2px;">
+              <option value="">(Aucun)</option>
+              <!-- Presets will be added here -->
+            </select>
+            <button type="button" id="savePreset"
+              style="font-size:11px; padding:2px 6px; margin-left:5px;">Sauvegarder</button>
+            <button type="button" id="deletePreset"
+              style="font-size:11px; padding:2px 6px; margin-left:2px; color:#c00;">Supprimer</button>
+          </label>
+        </div>
+      </div>
+
+      <div
+        style="display:flex; justify-content:flex-end; gap:12px; margin-top:25px; padding-top:15px; border-top:1px solid #eee;">
+        <button id="closeSettingsBtn"
+          style="background:#f5f5f5; color:#333; border:1px solid #ddd; padding:10px 20px; border-radius:6px;">Annuler</button>
+        <button id="saveSettingsBtn"
+          style="background:#2c7bb6; color:#fff; border:none; padding:10px 20px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">Valider
+          et Appliquer</button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+
+    <section id="overview" class="active">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h2>Analyse Graphique</h2>
+        <div id="metaBox" class="meta" style="margin:0; padding:4px 12px; font-size:12px;"></div>
+        <canvas id="detailsConfigChart" style="display:none;"></canvas>
+      </div> <!-- Closing Header Flex Container -->
+
+      <!-- Analysis Chart -->
+      <div style="margin-top:20px; width:100%; max-width:100%; overflow-x:auto;">
+        <div style="position:relative; height:500px; min-width:100%;">
+          <canvas id="mainChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-scroll-container" style="display:none;">
+        <div class="chart-scroll-inner">
+          <canvas id="scrollChart"></canvas>
+        </div>
+      </div>
+      <div class="small-note"><span id="chartHelpText">Cliquez sur une barre pour voir les détails ci-dessous.</span>
+        Défilez horizontalement pour voir <span id="scrollItemsText">tous les items</span>.</div>
+
+      <!-- Debug panel -->
+      <div id="debugPanel"
+        style="background:#fff3cd; border:1px solid #ffc107; padding:10px; margin:10px 0; border-radius:4px; font-family:monospace; font-size:12px; display:none;">
+      </div>
+
+      <section id="detailView" style="margin-top:20px; min-height:100px;">
+        <div id="detail"
+          style="background:#fff; padding:16px; border-radius:8px; border:1px solid #e0e0e0; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+          <p style="color:#666; font-style:italic;" id="detailHelpText">Cliquez sur un item dans la liste ou le
+            graphique pour voir les détails.</p>
+        </div>
+      </section>
+
+      <div
+        style="background:#2c7bb6; color:white; border-radius:8px; padding:10px 15px; margin-top:30px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between;">
+        <h2 style="margin:0; font-size:20px;" id="listTitle">Liste des Items</h2>
+        <button class="add-item-btn" id="addItemBtn" onclick="openTagBrowser()">+</button>
+      </div>
+      <!-- Sort controls - persistent container -->
+      <div id="sortControlsContainer" class="sort-controls" style="margin-bottom:15px;"></div>
+      <section id="pages"></section>
+      <div id="loadMoreTrigger" style="text-align:center; padding:20px; color:#666; font-style:italic;"></div>
+    </section>
+
+    <div style="display:none;">
+      <input id="windowDays" value="30">
+      <input id="w1" value="0.6">
+      <input id="w2" value="0.25">
+      <input id="w3" value="0.15">
+      <input id="maskThreshold" value="0.8">
+      <input id="critThreshold" type="number" min="0" max="1" step="0.01" value="0.5">
+      <button id="saveSettings">Sauvegarder & appliquer</button>
+      <button id="exportCsv">Exporter CSV</button>
+
+
+      <h3>Explication de la formule de difficulté</h3>
+      <p>Difficulty = w1 * recent_again_rate + w2 * lapse_rate + w3 * (1 - mastery).</p>
+      <p><em>recent_again_rate</em> = % d’“again” dans la fenêtre glissante (revlog). <em>lapse_rate</em> = part de
+        lapses historiques. <em>mastery</em> = (recent + mature) / total.</p>
+    </div>
+    </div>
+  </main>
+
+  <script>
+    /*__DATA_INJECTION__*/  // window.EDN_DATA injected by Python
+
+    // helper pycmd wrapper
+    function send_py(cmd) {
+      if (window.pycmd) {
+        pycmd(cmd);
+      } else if (window.qt && window.qt.webChannelTransport) {
+        pycmd(cmd); // try direct call for some Qt versions
+      } else {
+        console.warn("pycmd non disponible");
+      }
+    }
+
+    // State
+    const STATE = {
+      data: window.EDN_DATA || { items: [], meta: {} },
+      chartMetric: 'mastery', // mastery, studied_ratio, difficulty, unsuspended_share
+      sortField: 'studied_ratio',
+      sortDir: -1, // -1 desc, 1 asc
+      // Pagination state
+      renderedCount: 0,
+      ITEMS_PER_BATCH: 20,
+      // Exclusion/Addition
+      excludedTags: [],
+      additionalTags: []
+    };
+    window.STATE = STATE; // Global access for debug scripts
+
+    // Global Chart instance
+    let mainChart = null;
+
+    function pct(val) {
+      // Safety: handle undefined, null, NaN
+      if (val === undefined || val === null || isNaN(val)) return 0;
+      return Math.round(val * 100);
+    }
+
+    const STANDARD_EDN_SUBJECTS = [
+      "Anatomie", "Anatomo-pathologie", "Antibiothérapie", "Cardiologie",
+      "Dermatologie", "Douleur", "ECG", "Endocrinologie", "Gastro-entérologie",
+      "Gynécologie", "Gériatrie", "Hématologie", "Imagerie",
+      "Immunologie", "Infectiologie", "LCA", "Locomoteur", "MPR", "Neurologie",
+      "Nutrition", "Néphrologie", "Oncologie", "Ophtalmologie", "ORL",
+      "Pharmacologie", "Physiologie", "Pneumologie", "Psychiatrie",
+      "Pédiatrie", "Santé-publique", "Urgences", "Urologie"
+    ];
+
+    // DOM Elements
+    const els = {
+      scopeSelect: document.getElementById('scopeSelect'),
+      rangMode: document.getElementById('rangMode'),
+      includeChildren: document.getElementById('includeChildren'),
+      applyBtn: document.getElementById('applyBtn'),
+      barChart: document.getElementById('barChart'), // This ID is now unused in the HTML, but kept for reference if needed elsewhere.
+      mainChart: document.getElementById('mainChart'), // New ID for the main chart
+      pages: document.getElementById('pages'),
+      detail: document.getElementById('detail'),
+      detailView: document.getElementById('detailView'),
+      metricSelect: document.getElementById('chartMetric'),
+      loadMore: document.getElementById('loadMoreTrigger'),
+      subjectTrigger: document.getElementById('subjectTrigger'),
+      subjectList: document.getElementById('subjectList'),
+      filterBySubject: document.getElementById('filterBySubject')
+    };
+
+    // Chart Logic
+    function renderChart() {
+      if (!els.mainChart) return; // Use the new mainChart ID
+
+      const items = STATE.data.items.filter(i => {
+        // Filter out excluded items
+        if (STATE.excludedTags.includes(i.tag)) return false;
+        return true;
+      });
+
+      // Sort by current chart metric for readability
+      items.sort((a, b) => {
+        let va = getMetricValue(a, STATE.chartMetric);
+        let vb = getMetricValue(b, STATE.chartMetric);
+        return (vb - va); // always desc for chart
+      });
+
+      // Prepare data
+      const labels = items.map(x => x.display_name || x.tag);
+      const values = items.map(x => pct(getMetricValue(x, STATE.chartMetric)));
+      const colors = values.map(v => getColorForMetric(v, STATE.chartMetric));
+
+      // Dynamic Width Calculation
+      // ~20px per bar seems reasonable? + some padding
+      // Minimum width 1000px so it fills space if few items
+      const barWidth = 24;
+      const minWidth = 1000;
+      const computedWidth = Math.max(minWidth, items.length * barWidth);
+
+      // Set wrapper and canvas dimensions
+      // els.mainChart is the canvas
+      els.mainChart.style.height = '500px';
+      // Important: must reset canvas internal width/height attributes or ChartJS scales weirdly
+      els.mainChart.width = computedWidth;
+      els.mainChart.height = 500;
+
+      if (mainChart) mainChart.destroy();
+
+      const ctx = els.mainChart.getContext('2d'); // Use the new mainChart ID
+
+      // Dark Mode Check
+      const isNight = document.body.classList.contains('nightMode');
+      const textColor = isNight ? '#e0e0e0' : '#333'; // Darker for light mode
+      const gridColor = isNight ? '#444' : '#ddd';
+
+      mainChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: getMetricLabel(STATE.chartMetric),
+            data: values,
+            backgroundColor: colors,
+            borderRadius: 4,
+            barPercentage: 0.8,
+            categoryPercentage: 0.9
+          }]
+        },
+        options: {
+          responsive: true, // Enable responsive to fit screen
+          maintainAspectRatio: false,
+          onClick: (evt, elems) => {
+            if (!elems.length) return;
+            const idx = elems[0].index;
+            showDetailForTag(items[idx].tag);
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: gridColor },
+              ticks: { color: textColor }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { autoSkip: true, maxRotation: 90, minRotation: 45, color: textColor }
+            }
+          },
+          layout: {
+            padding: { bottom: 80, left: 20 } // Reduced padding as requested
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              message: "Tooltip",
+              callbacks: { label: (ctx) => `${ctx.parsed.y}%` }
+            }
+          }
+        }
+      });
+    }
+
+    // === UTILS ===
+    function getMetricValue(item, metric) {
+      if (metric === 'mastery') return item.mastery;
+      if (metric === 'difficulty') return item.difficulty;
+      if (metric === 'studied_ratio') return item.studied_ratio || 0;
+      if (metric === 'studied_total_ratio') return item.studied_total_ratio || 0;
+      if (metric === 'unsuspended_share') return (item.unsuspended / item.total) || 0;
+      return 0;
+    }
+
+    function getMetricLabel(metric) {
+      const map = {
+        'mastery': 'Maîtrise (%)',
+        'difficulty': 'Difficulté',
+        'studied_ratio': 'Appris/Désuspendu (%)',
+        'studied_total_ratio': 'Appris/Total (%)',
+        'unsuspended_share': 'Part Désuspendue (%)'
+      };
+      return map[metric] || metric;
+    }
+
+    function getColorForMetric(val, metric) {
+      // val is 0-100
+      if (metric === 'difficulty') {
+        // High diff = Bad (Red)
+        return val > 50 ? '#e06666' : '#93c47d';
+      }
+      // Others: High = Good (Green)
+      if (val < 40) return '#e06666';
+      if (val < 80) return '#f6b26b';
+      return '#93c47d';
+    }
+
+    // List Logic
+    function renderPages(reset = true) {
+      if (reset) {
+        STATE.renderedCount = 0;
+        els.pages.innerHTML = '';
+        // Create sorted list once and store it
+        // Check for 'percent' map or calc from counts
+        const rawList = STATE.data.items.filter(i => true); // No complex filtering needed, backend handles suspension
+
+        // Explicit cleanup for values to ensure sort works
+        rawList.sort((a, b) => {
+          let va = getMetricValue(a, STATE.sortField);
+          let vb = getMetricValue(b, STATE.sortField);
+          // Safety
+          if (typeof va !== 'number') va = 0;
+          if (typeof vb !== 'number') vb = 0;
+          return (va - vb) * STATE.sortDir;
+        });
+
+        STATE.cursorList = rawList; // Update cursorList with SORTED list
+
+
+        // Sort buttons are now persistent (created once in init)
+        // Just update the active state and direction indicator
+        const sortContainer = document.getElementById('sortControlsContainer');
+        if (sortContainer) {
+          sortContainer.querySelectorAll('button').forEach(b => {
+            b.classList.remove('active-sort');
+            if (b.dataset.sort === STATE.sortField) {
+              b.classList.add('active-sort');
+            }
+          });
+          const dirSpan = sortContainer.querySelector('.sort-dir');
+          if (dirSpan) {
+            dirSpan.textContent = STATE.sortDir === -1 ? '↓' : '↑';
+          }
+        }
+      }
+
+      const list = STATE.cursorList || [];
+      const start = STATE.renderedCount;
+      const end = Math.min(start + STATE.ITEMS_PER_BATCH, list.length);
+
+      const batch = list.slice(start, end);
+
+      appendItems(batch);
+      STATE.renderedCount = end;
+      updateHelpText();
+
+      // Handle Load More visibility
+      if (STATE.renderedCount < list.length) {
+        els.loadMore.innerHTML = '<button class="load-more-btn">Charger plus...</button>';
+        els.loadMore.querySelector('button').onclick = () => renderPages(false);
+        // Optional: IntersectionObserver for auto-load
+        setupInfiniteScroll();
+      } else {
+        els.loadMore.innerHTML = '<span style="color:#aaa;">Tous les items affichés</span>';
+      }
+    }
+
+    function updateHelpText() {
+      const mode = STATE.data.mode || 'items';
+      const chartMsg = document.getElementById('chartHelpText');
+      const detailMsg = document.getElementById('detailHelpText');
+      const listTitle = document.getElementById('listTitle');
+      const scrollText = document.getElementById('scrollItemsText');
+
+      let label = "un item";
+      let listLabel = "Liste des Items";
+      let scrollLabel = "tous les items";
+      if (mode === 'sdd') {
+        label = "une Situation de Départ";
+        listLabel = "Liste des Situations de Départ";
+        scrollLabel = "toutes les Situations de Départ";
+      }
+      if (mode === 'subject') {
+        label = "une Matière";
+        listLabel = "Liste des Matières";
+        scrollLabel = "toutes les matières";
+      }
+
+      if (chartMsg) chartMsg.innerText = `Cliquez sur une barre (${label}) pour voir les détails ci-dessous.`;
+      if (detailMsg) detailMsg.innerText = `Cliquez sur ${label} dans la liste ou le graphique pour voir les détails.`;
+      if (listTitle) listTitle.innerText = listLabel;
+      if (scrollText) scrollText.innerText = scrollLabel;
+    }
+
+    function excludeItem(tag) {
+      if (!STATE.excludedTags.includes(tag)) {
+        STATE.excludedTags.push(tag);
+        // Re-render without the excluded item
+        renderChart();
+        renderPages();
+      }
+    }
+
+    function openTagBrowser() {
+      // Request Python to open tag browser dialog
+      pycmd('open_tag_browser');
+    }
+
+    // Called from Python when user selects a tag
+    window.EDN_addCustomTag = function (tag, displayName) {
+      if (!STATE.additionalTags.find(t => t.tag === tag)) {
+        STATE.additionalTags.push({ tag: tag, display_name: displayName || tag });
+        // Request stats for this tag and add to display
+        pycmd('get_tag_stats ' + tag);
+      }
+    };
+
+    // Called from Python with stats for the added tag
+    window.EDN_addTagStats = function (stats) {
+      if (stats && stats.tag) {
+        // Add to data items if not already present
+        if (!STATE.data.items.find(it => it.tag === stats.tag)) {
+          STATE.data.items.push(stats);
+          // Re-render to show the new item
+          renderChart();
+          renderPages();
+        }
+      }
+    };
+
+    function appendItems(list) {
+      if (!list || list.length === 0) return;
+
+      // Filter out excluded items
+      const filteredList = list.filter(it => !STATE.excludedTags.includes(it.tag));
+
+      let html = '';
+      for (const it of filteredList) {
+
+
+        const diffVal = it.difficulty || 0;
+        const diffClass = diffVal >= 0.7 ? 'metric-bad' : (diffVal < 0.3 ? 'metric-good' : 'metric-neutral');
+        // const diffBg provided by CSS classes? Or simplified inline.
+        // Let's use clean visual logic:
+        // Good = Green Text, No Border.
+        // Bad = Red Text, Red Border + Bg.
+
+        function getStyle(val, isBadIfHigh = false) {
+          const high = val >= 0.7;
+          const low = val < 0.3;
+          let isGood = isBadIfHigh ? low : high;
+          let isBad = isBadIfHigh ? high : low;
+          // Neutral in between
+
+          // User Request: "Les paramètres en vert ne doivent pas bénéficier d'un cadre"
+          if (isGood) return `color:#388e3c; font-weight:800;`;
+          if (isBad) return `color:#d32f2f; background:#ffebee; border:1px solid #d32f2f; padding:2px 6px; border-radius:4px; font-weight:800;`;
+          return `color:#555; font-weight:600;`; // Neutral
+        }
+
+        const ratioPct = Math.min(100, Math.round((it.studied_ratio || 0) * 100));
+        const masteryPct = Math.min(100, Math.round((it.mastery || 0) * 100));
+        const diffPct = Math.round(diffVal * 100);
+        let unsuspRaw = (it.unsuspended / it.total) || 0;
+        if (unsuspRaw > 1) unsuspRaw = 1; // Safety clamp
+        const unsuspPct = Math.min(100, Math.round(unsuspRaw * 100));
+
+        // Thresholds from config
+        const thRatio = (parseFloat(document.getElementById('colorThRatio').value) || 0.5) * 100;
+        const thMastery = (parseFloat(document.getElementById('colorThMastery').value) || 0.5) * 100;
+
+        // Logic: > Threshold = Good (Green, No Border). < Threshold = Bad (Red, Box).
+        const styleRatio = ratioPct >= thRatio ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
+        const styleMastery = masteryPct >= thMastery ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
+        const styleDiff = diffVal >= 0.7 ? 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;' : (diffVal < 0.3 ? 'color:#388e3c; font-weight:800;' : 'color:#555; font-weight:600;');
+
+        // Unsuspend: High is good?
+        const styleUnsus = unsuspPct >= 40 ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
+
+        html += `
+         <div class="item modern-card" onclick="showDetailForTag('${it.tag}')">
+            <button class="exclude-btn" onclick="event.stopPropagation(); excludeItem('${it.tag}')"></button>
+            <div class="card-title">
+               ${it.display_name || it.tag}
+            </div>
+            
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:8px; font-size:12px; text-align:center; padding:0 5px;">
+               <!-- Ratio -->
+               <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                 <span style="color:#666; font-size:11px;">Appris/Désusp.</span>
+                 <span style="${styleRatio}">${ratioPct}%</span>
+               </div>
+               
+               <!-- Maitrise -->
+               <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                 <span style="color:#666; font-size:11px;">Maîtrise</span>
+                 <span style="${styleMastery}">${masteryPct}%</span>
+               </div>
+
+               <!-- Difficulté -->
+               <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                 <span style="color:#666; font-size:11px;">Difficulté</span>
+                 <span style="${styleDiff}">${diffPct}%</span>
+               </div>
+               
+               <!-- Part Désuspendue -->
+               <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                 <span style="color:#666; font-size:11px;">Désusp.</span>
+                 <span style="${styleUnsus}">${it.unsuspended}/${it.total}</span>
+               </div>
+               <!-- Appris/Total -->
+               <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+                 <span style="color:#666;">Appris/Total:</span>
+                 <span style="${getStyle(it.studied_total_ratio || 0, false)}">${pct(it.studied_total_ratio)}%</span>
+               </div>
+             </div>
+          </div>
+          `;
+      }
+      els.pages.innerHTML += html;
+    }
+
+    let observer = null;
+    function setupInfiniteScroll() {
+      if (observer) observer.disconnect();
+      observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          renderPages(false);
+        }
+      }, { threshold: 0.1 });
+      if (els.loadMore) observer.observe(els.loadMore);
+    }
+
+    function showDetailForTag(tag) {
+      const it = STATE.data.items.find(x => x.tag === tag);
+      if (!it) return;
+      const detail = document.getElementById('detail');
+
+      // Calculate metrics
+      const ratio = it.studied_ratio || 0;
+      const ratioPct = pct(ratio); // pct() already does *100
+      const masteryPct = pct(it.mastery);
+      const diffPct = pct(it.difficulty);
+      const unsuspPct = pct(it.unsuspended / it.total); // pct() already does *100
+
+      const openTagQuery = `tag:"${tag}"`;
+
+      detail.innerHTML = `
+  <div style="text-align:center; padding-bottom:16px; border-bottom:1px solid #eee; margin-bottom:20px;">
+    <h2 style="margin:0; font-size:24px; color:#2196F3; cursor:pointer; text-decoration:underline;"
+      title="Ouvrir dans le navigateur" onclick="window.openSlice('')">
+      ${it.display_name || it.tag}
+    </h2>
+
+    <div
+      style="display:flex; flex-wrap:wrap; justify-content:center; gap:16px; margin-top:12px; font-size:14px; color:#555;">
+      <span title="Appris/Désuspendu"><b>Appris/Désuspendu:</b> ${ratioPct}%</span>
+      <span title="Appris/Total"><b>Appris/Total:</b> ${pct(it.studied_total_ratio)}%</span>
+      <span title="Cartes non-suspendues / Total"><b>Désuspendu:</b> ${it.unsuspended}/${it.total}
+        (${unsuspPct}%)</span>
+      <span title="Maîtrise (Mature/Total)"><b>Maîtrise:</b> ${masteryPct}%</span>
+      <span title="Difficulté (moyenne FSRS)"><b>Difficulté:</b> ${pct(it.difficulty / 10)}% (Note:
+        ${pct(it.difficulty)})</span>
+    </div>
+  </div>
+
+  <!-- Pie Chart Section -->
+  <div style="background:#333; color:#fff; padding:20px; border-radius:8px;">
+    <h3 style="margin-top:0; color:#fff;">Nombre de notes</h3>
+
+    <div style="margin-bottom:12px;">
+      <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="sepSuspended" checked> Séparer les cartes suspendues/enfouies
+      </label>
+    </div>
+
+    <div style="display:flex; align-items:flex-start; justify-content:center; gap:20px; flex-wrap:wrap;">
+      <div style="width:100%; max-width:280px; aspect-ratio:1/1; position:relative; flex-shrink:0;">
+        <canvas id="detailPie"></canvas>
+      </div>
+
+      <!-- Legend Table -->
+      <div id="pieLegend" style="font-family:sans-serif; font-size:14px; min-width:200px; flex:1;">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+
+    <div
+      style="margin-top:10px; font-weight:bold; border-top:1px solid #555; padding-top:8px; display:flex; justify-content:space-between;">
+      <span>Nombre total de notes</span>
+      <span>${it.total}</span>
+    </div>
+  </div>
+  `;
+
+      // Helper to trigger search
+      window.openSlice = function (mode) {
+        let q = `tag:"${tag}"`;
+        const separate = document.getElementById('sepSuspended')?.checked;
+
+        // Base exclusion clause (only when "Séparer" is ON)
+        const excludeClause = separate ? ' AND -(is:buried OR is:suspended)' : '';
+
+        // Mapping modes to queries
+        if (mode === 'new') q += ' is:new' + excludeClause;
+        else if (mode === 'learning') q += ' (-is:review AND is:learn)' + excludeClause;
+        else if (mode === 'relearning') q += ' (is:review AND is:learn)' + excludeClause;
+        else if (mode === 'recent') q += ' (is:review AND -is:learn) AND prop:ivl<21' + excludeClause;
+        else if (mode === 'mature') q += ' (is:review AND -is:learn) AND prop:ivl>=21' + excludeClause;
+        else if (mode === 'suspended') q += ' is:suspended';
+        else if (mode === 'buried') q += ' is:buried';
+        else if (mode === 'other') q += ' -(is:new OR is:learn OR is:review OR is:suspended OR is:buried)';
+
+        send_py('open_search ' + q);
+      };
+
+      els.detailView.scrollIntoView({ behavior: 'smooth' });
+
+      // Pie Chart Logic
+      const ctx = document.getElementById('detailPie').getContext('2d');
+      const checkbox = document.getElementById('sepSuspended');
+      const counts = it.counts;
+
+      const colors = {
+        new: '#00aaff',
+        learning: '#f0ad4e',
+        relearning: '#d9534f',
+        recent: '#5cb85c',
+        mature: '#005500',
+        suspended: '#ffcc00',
+        buried: '#888888'
+      };
+
+      function updatePie() {
+        const separate = checkbox.checked;
+        // Data Points
+        let data = [
+
+          { label: 'Inédites', val: counts.new || 0, color: colors.new, key: 'new' },
+          { label: 'À repasser', val: counts.learning || 0, color: colors.learning, key: 'learning' },
+          { label: 'Réapprentissage', val: counts.relearning || 0, color: colors.relearning, key: 'relearning' },
+          { label: 'Récentes', val: counts.recent || 0, color: colors.recent, key: 'recent' },
+          { label: 'Matures', val: counts.mature || 0, color: colors.mature, key: 'mature' }
+        ];
+
+        // Add "Autres" if any cards are in that category
+        if ((counts.other || 0) > 0) {
+          data.push({ label: 'Autres', val: counts.other || 0, color: colors.other, key: 'other' });
+        }
+
+        if (separate) {
+          data.push({ label: 'Suspendues', val: counts.suspended || 0, color: colors.suspended, key: 'suspended' });
+          data.push({ label: 'Enfouies', val: counts.buried || 0, color: colors.buried, key: 'buried' });
+        }
+
+        let pieTotal = data.reduce((acc, d) => acc + d.val, 0);
+
+        const legendHTML = data.map(d => {
+          const p = pieTotal > 0 ? ((d.val / pieTotal) * 100).toFixed(2) + '%' : '0%';
+          return `
+    <div style="display:flex; justify-content:space-between; margin-bottom:4px; align-items:center; cursor:pointer;"
+      onclick="openSlice('${d.key}')" title="Ouvrir '${d.label}' dans le navigateur">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="width:12px; height:12px; background:${d.color}; display:inline-block;"></span>
+        <span style="text-decoration:underline;">${d.label}</span>
+      </div>
+      <div style="display:flex; gap:20px;">
+        <span style="font-weight:bold;">${d.val}</span>
+        <span style="width:50px; text-align:right;">${p}</span>
+      </div>
+    </div>
+    `;
+        }).join('');
+
+        document.getElementById('pieLegend').innerHTML = legendHTML;
+
+        // Render Chart
+        if (window.detailChart) window.detailChart.destroy();
+        window.detailChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: data.map(d => d.label),
+            datasets: [{
+              data: data.map(d => d.val),
+              backgroundColor: data.map(d => d.color),
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (evt, elems) => {
+              if (elems.length > 0) {
+                const idx = elems[0].index;
+                openSlice(data[idx].key);
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => ` ${ctx.label}: ${ctx.raw} (${((ctx.raw / pieTotal) * 100).toFixed(1)}%)`
+                }
+              }
+            }
+          }
+        });
+      }
+
+      checkbox.onchange = updatePie;
+      updatePie();
+    }
+
+    // Create sort buttons ONCE on init (persistent)
+    const sortContainer = document.getElementById('sortControlsContainer');
+    if (sortContainer) {
+      sortContainer.innerHTML = `
+    <span>Trier par:</span>
+    <button data-sort="studied_ratio">Ratio Appris/Désusp</button>
+    <button data-sort="studied_total_ratio">Ratio Appris/Total</button>
+    <button data-sort="mastery">Maîtrise</button>
+    <button data-sort="difficulty">Difficulté</button>
+    <button data-sort="unsuspended_share">Part Désuspendue</button>
+    <span class="sort-dir">↓</span>
+    `;
+      sortContainer.querySelectorAll('button').forEach(b => {
+        const sortValue = b.dataset.sort;
+        b.addEventListener('click', function (e) {
+          e.preventDefault();
+          console.log('🔴 PERSISTENT SORT CLICK:', sortValue);
+          if (STATE.sortField === sortValue) {
+            STATE.sortDir *= -1;
+          } else {
+            STATE.sortField = sortValue;
+            STATE.sortDir = -1;
+          }
+          renderPages(true);
+        });
+      });
+    }
+
+    // Subject management event listeners
+    document.getElementById('selectAllSubjects')?.addEventListener('click', () => {
+      document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => cb.checked = true);
+      saveState();
+    });
+
+    document.getElementById('selectNoneSubjects')?.addEventListener('click', () => {
+      document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => cb.checked = false);
+      saveState();
+    });
+
+    document.getElementById('showSubjectChildren')?.addEventListener('change', (e) => {
+      // Re-populate to show/hide children
+      const subjects = STATE.data?.meta?.available_subjects;
+      if (subjects) populateSubjectCheckboxes(subjects);
+      saveState();
+    });
+
+    // Initialize subject filter visibility based on initial mode and checkbox
+    function updateSubjectFilterVisibility() {
+      const mode = els.scopeSelect.value;
+      const filterBySubject = els.filterBySubject?.checked || false;
+      const filterLabel = document.getElementById('subjectFilterLabel');
+      const filterContainer = document.getElementById('filterBySubjectContainer');
+
+      if (!filterLabel || !filterContainer) return;
+
+      if (mode === 'subject') {
+        filterLabel.style.display = 'none';
+        filterContainer.style.display = 'none'; // Hide checkbox in subject mode
+      } else {
+        filterContainer.style.display = 'inline-block';
+        if (filterBySubject) {
+          filterLabel.style.display = '';
+        } else {
+          filterLabel.style.display = 'none';
+        }
+      }
+    }
+
+    els.scopeSelect.addEventListener('change', (e) => {
+      // Reset excluded items when mode changes
+      STATE.excludedTags = [];
+      STATE.additionalTags = [];
+      updateSubjectFilterVisibility();
+      saveState(); // Auto-save when mode changes
+    });
+
+    document.getElementById('filterBySubject')?.addEventListener('change', () => {
+      updateSubjectFilterVisibility();
+      saveState();
+    });
+
+    els.rangMode.addEventListener('change', () => saveState());
+    els.includeChildren.addEventListener('change', () => saveState());
+
+    // REMOVED: Auto-refresh on subject change - causes lag
+    // User must click "Appliquer" to update
+
+    els.metricSelect.addEventListener('change', (e) => {
+      STATE.chartMetric = e.target.value;
+      renderChart();
+      saveState(); // Auto-save metric preference
+    });
+
+    // Settings Logic
+    const settingsModal = document.getElementById('settingsModal');
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+      settingsModal.style.display = 'flex';
+    });
+    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+      settingsModal.style.display = 'none';
+    });
+    document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+      // 1. Get subjects from settings checkboxes
+      const checked = getCheckedSubjectsInSettings();
+
+      // 2. Sync to main dropdown checkboxes
+      document.querySelectorAll('#subjectList input[type=checkbox]').forEach(cb => {
+        cb.checked = checked.includes(cb.value);
+      });
+      updateSubjectTriggerLabel();
+
+      // 3. Save state (will read from settings checkboxes via function)
+      saveState();
+
+      settingsModal.style.display = 'none';
+      if (els.applyBtn) els.applyBtn.click();
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (settingsModal.style.display === 'flex') {
+          settingsModal.style.display = 'none';
+        }
+      }
+    });
+
+    // === PRESET BUTTON HANDLERS ===
+    document.getElementById('savePreset')?.addEventListener('click', () => {
+      const presetName = prompt('Nom du preset :');
+      if (!presetName) return;
+
+      const enabled = Array.from(document.querySelectorAll('#subjectCheckboxList input[type=checkbox]:checked'))
+        .map(cb => cb.value);
+
+      const presets = loadPresets();
+      presets[presetName] = enabled;
+      window.EDN_STATE_CACHE.presets = presets;
+
+      // Update preset dropdown BEFORE calling saveState
+      const presetSelect = document.getElementById('subjectPreset');
+      if (presetSelect) {
+        const existing = Array.from(presetSelect.options).find(o => o.value === presetName);
+        if (!existing) {
+          const opt = document.createElement('option');
+          opt.value = presetName;
+          opt.textContent = presetName;
+          presetSelect.appendChild(opt);
+        }
+        presetSelect.value = presetName;
+      }
+
+      saveState();
+      alert(`Preset "${presetName}" sauvegardé !`);
+    });
+
+    document.getElementById('subjectPreset')?.addEventListener('change', (e) => {
+      const presetName = e.target.value;
+      if (presetName) applyPreset(presetName);
+    });
+
+    // Delete preset button
+    document.getElementById('deletePreset')?.addEventListener('click', () => {
+      const presetSelect = document.getElementById('subjectPreset');
+      const presetName = presetSelect?.value;
+      if (!presetName) {
+        alert('Sélectionnez un preset à supprimer');
+        return;
+      }
+
+      if (!confirm(`Supprimer le preset "${presetName}" ?`)) return;
+
+      // Actually delete the preset
+      const presets = loadPresets();
+      delete presets[presetName];
+      savePresets(presets);
+
+      // Remove from dropdown
+      const opt = Array.from(presetSelect.options).find(o => o.value === presetName);
+      if (opt) opt.remove();
+      presetSelect.value = '';
+
+      alert('Preset supprimé !');
+    }); // END of deletePreset handler
+
+    document.getElementById('selectStandardSubjects')?.addEventListener('click', () => {
+      document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => {
+        const isStandard = STANDARD_EDN_SUBJECTS.some(s => cb.value === s || cb.value.endsWith('::' + s));
+        cb.checked = isStandard;
+      });
+      syncSubjectsToDropdown();
+      saveState();
+    });
+
+    document.getElementById('selectAllSubjects')?.addEventListener('click', () => {
+      document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => cb.checked = true);
+      syncSubjectsToDropdown();
+      saveState();
+    });
+
+    document.getElementById('selectNoneSubjects')?.addEventListener('click', () => {
+      document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => cb.checked = false);
+      syncSubjectsToDropdown();
+      saveState();
+    });
+
+    // === STATE PERSISTENCE (JSON File via Python) ===
+    window.EDN_STATE_CACHE = { presets: {}, settings: {} };
+    window.EDN_STATE_LOADED = false;
+    window.EDN_FIRST_POPULATE_DONE = false;
+
+    function saveState() {
+      // 1. Strict loading guard
+      if (!window.EDN_STATE_LOADED) {
+        console.warn("Skipping saveState: Initial state not yet loaded/ready.");
+        return;
+      }
+
+      const presets = window.EDN_STATE_CACHE?.presets || {};
+      const enabledSubjects = getCheckedSubjectsInSettings();
+      const selectedPreset = document.getElementById('subjectPreset')?.value || "";
+
+      // 2. Robust state construction
+      const state = {
+        settings: {
+          mode: els.scopeSelect.value,
+          rang: els.rangMode.value,
+          includeChildren: els.includeChildren.checked,
+          metric: els.metricSelect.value,
+          windowDays: document.getElementById('windowDaysInput')?.value,
+          matureIvl: document.getElementById('matureIvlInput')?.value,
+          sortField: STATE.sortField,
+          sortDir: STATE.sortDir,
+          enabledSubjects: enabledSubjects,
+          selectedPreset: selectedPreset,
+          filterBySubject: document.getElementById('filterBySubject')?.checked || false
+        },
+        presets: presets
+      };
+
+      // 3. Safety Check: Never overwrite with empty subjects if we have some pending or if we already have some in cache
+      const oldEnabled = window.EDN_STATE_CACHE?.settings?.enabledSubjects || [];
+      if (enabledSubjects.length === 0 && (oldEnabled.length > 0 || window.EDN_PENDING_ENABLED_SUBJECTS?.length > 0)) {
+        console.warn("Attempted to save empty subjects while data exists. ABORTING SAVE.", {
+          new: enabledSubjects, old:
+            oldEnabled
+        });
+        return;
+      }
+
+      console.log(">>> [SAVE STATE]", state);
+      window.EDN_STATE_CACHE = state;
+      pycmd('save_state ' + JSON.stringify(state));
+    }
+
+    function getCheckedSubjectsInSettings() {
+      // First check if we have checkboxes populated
+      const checkboxes = document.querySelectorAll('#subjectCheckboxList input[type=checkbox]:checked');
+      if (checkboxes.length > 0) {
+        return Array.from(checkboxes).map(cb => cb.value);
+      }
+      // Fallback to pending subjects (used at startup before checkboxes are populated)
+      if (window.EDN_PENDING_ENABLED_SUBJECTS && window.EDN_PENDING_ENABLED_SUBJECTS.length > 0) {
+        console.log("[getCheckedSubjectsInSettings] Using pending subjects:", window.EDN_PENDING_ENABLED_SUBJECTS.length);
+        return window.EDN_PENDING_ENABLED_SUBJECTS;
+      }
+      return [];
+    }
+
+    function getSelectedSubjects() {
+      // Main dropdown checkboxes
+      return Array.from(document.querySelectorAll('#subjectList input[type=checkbox]:checked'))
+        .map(cb => cb.value);
+    }
+
+    // Debug storage button listener removed for production
+
+    function loadPresets() { return window.EDN_STATE_CACHE?.presets || {}; }
+    function savePresets(presets) {
+      window.EDN_STATE_CACHE.presets = presets;
+      saveState();
+    }
+
+    function populatePresetsDropdown() {
+      const presets = loadPresets();
+      const presetSel = document.getElementById('subjectPreset');
+      if (!presetSel) return;
+      while (presetSel.options.length > 1) presetSel.remove(1);
+      Object.keys(presets).forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        presetSel.appendChild(opt);
+      });
+      // Explicitly set value from cache
+      if (window.EDN_STATE_CACHE?.settings?.selectedPreset) {
+        presetSel.value = window.EDN_STATE_CACHE.settings.selectedPreset;
+      }
+    }
+
+    // Called by Python when state is loaded
+    window.EDN_receiveState = function (state) {
+      console.log(">>> [EDN_receiveState] Initial data from Python:", state);
+
+      const isIncomingEmpty = !state || (Object.keys(state.settings || {}).length === 0 && Object.keys(state.presets ||
+        {}).length === 0);
+
+      if (isIncomingEmpty) {
+        console.warn("Python state is empty. Maintaining current session cache.");
+      } else {
+        // Merge or update cache
+        if (state.presets) window.EDN_STATE_CACHE.presets = state.presets;
+        if (state.settings) window.EDN_STATE_CACHE.settings = state.settings;
+      }
+
+      window.EDN_STATE_LOADED = true; // UNLOCK SAVING
+
+      const s = window.EDN_STATE_CACHE.settings;
+      if (s) {
+        if (s.mode) els.scopeSelect.value = s.mode;
+        if (s.rang) els.rangMode.value = s.rang;
+        if (s.includeChildren !== undefined) els.includeChildren.checked = s.includeChildren;
+        if (s.metric) {
+          els.metricSelect.value = s.metric;
+          STATE.chartMetric = s.metric;
+        }
+        if (s.windowDays) document.getElementById('windowDaysInput').value = s.windowDays;
+        if (s.matureIvl) document.getElementById('matureIvlInput').value = s.matureIvl;
+        if (s.sortField) STATE.sortField = s.sortField;
+        if (s.sortDir) STATE.sortDir = s.sortDir;
+        window.EDN_PENDING_ENABLED_SUBJECTS = s.enabledSubjects;
+        window.EDN_PENDING_PRESET = s.selectedPreset;
+
+        if (els.filterBySubject && s.filterBySubject !== undefined) {
+          els.filterBySubject.checked = s.filterBySubject;
+        }
+      }
+
+      populatePresetsDropdown();
+      updateSubjectFilterVisibility();
+
+      // If we have available subjects, populate checkboxes
+      const subjects = state?.meta?.available_subjects;
+      if (subjects) {
+        populateSubjectCheckboxes(subjects);
+      }
+
+      // If a preset was active, it will be handled by EDN_reload once subjects are available
+      console.log("Triggering Apply with restored settings (NO SAVE)...");
+      setTimeout(() => {
+        triggerRecompute(true);
+      }, 300);
+    };
+
+    function requestStateFromPython() {
+      pycmd('load_state');
+    }
+
+
+    // CSV Export
+    document.getElementById('exportCsv').addEventListener('click', () => {
+      pycmd('export_csv');
+    });
+
+
+
+    function triggerRecompute(skipSave = false) {
+      console.log("triggerRecompute", skipSave ? "(SKIP SAVE)" : "(WITH SAVE)");
+      if (!skipSave) {
+        saveState();
+      }
+
+      const mode = els.scopeSelect.value;
+      let threshold = 0.8;
+      const thItems = parseFloat(document.getElementById('threshItemsInput')?.value) || 0.4;
+      const thSdd = parseFloat(document.getElementById('threshSddInput')?.value) || 0.5;
+      const thSubj = parseFloat(document.getElementById('threshSubjInput')?.value) || 0.4;
+
+      if (mode === 'items') threshold = thItems;
+      else if (mode === 'sdd') threshold = thSdd;
+      else threshold = thSubj;
+
+      const filterBySubject = document.getElementById('filterBySubject')?.checked || false;
+
+      const payload = {
+        mode: mode,
+        only_rang: els.rangMode.value === 'onlyA' ? 'A' : null,
+        exclude_rang: els.rangMode.value === 'notA' ? 'A' : null,
+        include_children: els.includeChildren.checked,
+        mask_threshold: threshold,
+        window_days: parseInt(document.getElementById('windowDaysInput')?.value) || 30,
+        mature_ivl: parseInt(document.getElementById('matureIvlInput')?.value) || 21,
+        subject_filter: mode === 'subject'
+          ? getCheckedSubjectsInSettings()  // Mode Matières: use Settings presets
+          : (filterBySubject ? getSelectedSubjects() : []),
+        overlap_threshold: parseFloat(document.getElementById('subjectOverlapThreshold')?.value) || 0.15,
+        blacklist: document.getElementById('blacklistInput')?.value || ""
+      };
+
+      console.log(" - Sending payload to Python:", payload);
+      pycmd('recompute ' + JSON.stringify(payload));
+    }
+
+    let lastCheckedSettings = null;
+    let lastCheckedMain = null;
+
+    function handleShiftClick(e, checkbox, checkboxes, isSettings = true) {
+      if (e.shiftKey && (isSettings ? lastCheckedSettings : lastCheckedMain)) {
+        const last = isSettings ? lastCheckedSettings : lastCheckedMain;
+        let start = checkboxes.indexOf(last);
+        let end = checkboxes.indexOf(checkbox);
+
+        if (start !== -1 && end !== -1) {
+          const slice = checkboxes.slice(Math.min(start, end), Math.max(start, end) + 1);
+          slice.forEach(cb => cb.checked = checkbox.checked);
+        }
+      }
+
+      // Parent -> Children logic if Shift is pressed
+      if (e.shiftKey) {
+        const val = checkbox.value;
+        const prefix = val + "::";
+        checkboxes.forEach(cb => {
+          if (cb.value.startsWith(prefix)) {
+            cb.checked = checkbox.checked;
+          }
+        });
+      }
+
+      if (isSettings) lastCheckedSettings = checkbox;
+      else lastCheckedMain = checkbox;
+    }
+
+    els.applyBtn.addEventListener('click', () => {
+      triggerRecompute(false);
+    });
+
+    // Populate subject checkboxes in settings
+    function populateSubjectCheckboxes(subjects) {
+      const container = document.getElementById('subjectCheckboxList');
+      if (!container || !subjects || subjects.length === 0) return;
+
+      const showChildren = document.getElementById('showSubjectChildren')?.checked || false;
+
+      // Capture CURRENT INTERACTIVE state before clearing
+      const currentlyChecked = Array.from(container.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+
+      // Determine source of truth for checked subjects:
+      // 1. Pending startup state (if first load)
+      // 2. Currently cached settings
+      // 3. Current interactive DOM state
+      let sourceOfTruth = null;
+      if (window.EDN_PENDING_ENABLED_SUBJECTS !== null && window.EDN_PENDING_ENABLED_SUBJECTS !== undefined) {
+        sourceOfTruth = window.EDN_PENDING_ENABLED_SUBJECTS;
+      } else if (window.EDN_STATE_CACHE?.settings?.enabledSubjects &&
+        window.EDN_STATE_CACHE.settings.enabledSubjects.length > 0) {
+        sourceOfTruth = window.EDN_STATE_CACHE.settings.enabledSubjects;
+      } else if (currentlyChecked.length > 0) {
+        sourceOfTruth = currentlyChecked;
+      }
+
+      container.innerHTML = '';
+      subjects.forEach(subj => {
+        const isChild = subj.includes('::');
+        if (!showChildren && isChild) return;
+
+        const div = document.createElement('div');
+        div.style.marginBottom = '5px';
+        if (isChild) div.style.marginLeft = '20px';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = subj;
+        checkbox.id = 'subj_' + subj.replace(/[^a-zA-Z0-9]/g, '_');
+
+        checkbox.onclick = (e) => {
+          const allCbs = Array.from(container.querySelectorAll('input[type=checkbox]'));
+          handleShiftClick(e, checkbox, allCbs, true);
+          // If user manually clicks, deselect the preset (as it's now a custom selection)
+          const presetSelect = document.getElementById('subjectPreset');
+          if (presetSelect) presetSelect.value = '';
+          saveState();
+        };
+
+        // 2. If NO truth ever (first run), apply standard fallback.
+        if (sourceOfTruth !== null) {
+          checkbox.checked = sourceOfTruth.includes(subj);
+        } else if (!window.EDN_FIRST_POPULATE_DONE) {
+          // Standard fallback ONLY for the very first time if no cache/pending exists
+          checkbox.checked = STANDARD_EDN_SUBJECTS.some(s => subj === s || subj.endsWith('::' + s));
+        } else {
+          // Fallback to unchecked if first populate is done and we have no other source
+          checkbox.checked = false;
+        }
+
+        const label = document.createElement('label');
+        label.htmlFor = checkbox.id;
+        label.style.marginLeft = '5px';
+        label.textContent = isChild ? '└─ ' + subj.split('::').pop() : subj.split('::').pop();
+
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        container.appendChild(div);
+      });
+
+      syncSubjectsToDropdown();
+      window.EDN_FIRST_POPULATE_DONE = true;
+    }
+
+    function applyPreset(presetName, noRecompute = false) {
+      const presets = loadPresets();
+      const preset = presets[presetName];
+      if (!preset) return;
+
+      console.log('Applying preset:', presetName, noRecompute ? '(no recompute)' : '');
+
+      // Update dropdown selection
+      const presetSelect = document.getElementById('subjectPreset');
+      if (presetSelect) presetSelect.value = presetName;
+
+      document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => {
+        cb.checked = preset.includes(cb.value);
+      });
+      syncSubjectsToDropdown();
+
+      if (!noRecompute) {
+        saveState();
+        if (els.applyBtn) els.applyBtn.click();
+      }
+    }
+
+    window.EDN_reload = function (data) {
+      console.log(">>> [EDN_reload] Data received from Python");
+      if (data && data.items && data.items.length > 0) {
+        const first = data.items[0];
+        console.log("   First Item Tag:", first.tag);
+        console.log("   First Item StudiedRatio:", first.studied_ratio);
+        console.log("   First Item StudiedTotalRatio:", first.studied_total_ratio);
+        console.log("   First Item Keys:", Object.keys(first));
+      } else {
+        console.warn("   No items in data payload");
+      }
+
+      STATE.data = data;
+      renderChart();
+      renderPages();
+      const meta = data.meta || {};
+      document.getElementById('metaBox').innerHTML = `<b>Items:</b> ${meta.total_units || 0} — <b>Médiane Maîtrise:</b>
+    ${pct(meta.median_mastery)}% — <b>Critiques:</b> ${meta.num_critical_items || 0}`;
+
+
+      if (meta.available_subjects) {
+        // 1. Only populate checkboxes in settings ONCE on first load
+        // This prevents resetting user's selection every time
+        if (!window.EDN_SUBJECTS_POPULATED) {
+          populateSubjectCheckboxes(meta.available_subjects);
+          window.EDN_SUBJECTS_POPULATED = true;
+          console.log("Subjects populated for the first time");
+        }
+
+        // 2. Only restore STARTUP state ONCE
+        if (window.EDN_PENDING_PRESET || window.EDN_PENDING_ENABLED_SUBJECTS) {
+          console.log("Restoring STARTUP state (First Load)...");
+
+          // Restore preset selection if any
+          if (window.EDN_PENDING_PRESET) {
+            const presetSelect = document.getElementById('subjectPreset');
+            if (presetSelect) {
+              presetSelect.value = window.EDN_PENDING_PRESET;
+              // Force sync checkboxes from this preset
+              applyPreset(window.EDN_PENDING_PRESET, true);
+            }
+          } else if (window.EDN_PENDING_ENABLED_SUBJECTS) {
+            // Individual subjects were active, sync them
+            const savedSubjects = window.EDN_PENDING_ENABLED_SUBJECTS;
+            if (savedSubjects && Array.isArray(savedSubjects)) {
+              // Settings modal
+              document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => {
+                cb.checked = savedSubjects.includes(cb.value);
+              });
+              // Synchronize to main dropdown
+              syncSubjectsToDropdown();
+            }
+          }
+
+          // CRITICAL: Clear pending flags so subsequent reloads don't reset the UI
+          window.EDN_PENDING_PRESET = null;
+          window.EDN_PENDING_ENABLED_SUBJECTS = null;
+        }
+
+        // 3. Re-populate/filter the main subject dropdown based on CURRENT checkbox states
+        const list = document.getElementById('subjectList');
+        if (list) {
+          const currentSel = getSelectedSubjects();
+          const enabledInSettings = getCheckedSubjectsInSettings();
+          list.innerHTML = '';
+
+          meta.available_subjects.forEach(subj => {
+            // ONLY show subjects that are ENABLED in settings
+            if (enabledInSettings.length > 0 && !enabledInSettings.includes(subj)) return;
+
+            let display = subj;
+            if (subj.includes("::")) display = subj.split("::").pop().replace(/-/g, " ");
+
+            const label = document.createElement('label');
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = subj;
+            cb.checked = currentSel.includes(subj);
+            cb.onclick = (e) => {
+              const allCbs = Array.from(list.querySelectorAll('input[type=checkbox]'));
+              handleShiftClick(e, cb, allCbs, false);
+              updateSubjectTriggerLabel();
+              saveState();
+            };
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(display));
+            list.appendChild(label);
+          });
+          updateSubjectTriggerLabel();
+        }
+      }
+    };
+
+    // Sync checked subjects in Settings to the Main Dropdown
+    function syncSubjectsToDropdown() {
+      // Get all checked boxes from settings
+      const checkedBoxes = Array.from(document.querySelectorAll('#subjectCheckboxList input[type=checkbox]:checked'));
+      const checkedValues = checkedBoxes.map(cb => cb.value);
+
+      // Match checkboxes in main dropdown
+      document.querySelectorAll('#subjectList input[type=checkbox]').forEach(cb => {
+        cb.checked = checkedValues.includes(cb.value);
+      });
+
+      updateSubjectTriggerLabel();
+      console.log(`Synced ${checkedValues.length} subjects to main dropdown.`);
+    }
+
+    function updateSubjectTriggerLabel() {
+      const selected = getSelectedSubjects();
+      const trigger = document.getElementById('subjectTrigger');
+      if (!trigger) return;
+      if (selected.length === 0) trigger.textContent = "Matières (Tout)";
+      else if (selected.length === 1) {
+        let name = selected[0].split('::').pop();
+        trigger.textContent = name.length > 15 ? name.substring(0, 12) + "..." : name;
+      }
+      else trigger.textContent = `Matières (${selected.length})`;
+    }
+
+    // Toggle dropdown
+    document.getElementById('subjectTrigger')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const list = document.getElementById('subjectList');
+      if (list) list.style.display = list.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', () => {
+      const list = document.getElementById('subjectList');
+      if (list) list.style.display = 'none';
+    });
+
+    document.getElementById('subjectList')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    // === INITIALIZATION ===
+    function EDN_init() {
+      if (window.EDN_INIT_DONE) return;
+      window.EDN_INIT_DONE = true;
+      console.log("=== EDN_init() START ===");
+
+      // NATIVE DEFAULTS: Items, All Ranks, No Children, No Subject Filter
+      els.scopeSelect.value = 'items';
+      els.rangMode.value = 'all';
+      els.includeChildren.checked = false;
+      if (els.filterBySubject) els.filterBySubject.checked = false;
+      updateSubjectFilterVisibility();
+      els.metricSelect.value = 'mastery';
+
+      // 2. Request saved state from Python (will overwrite defaults if state exists)
+      console.log("Requesting saved state from Python...");
+      requestStateFromPython();
+
+      // 3. Hide debug
+      setTimeout(() => {
+        const d = document.getElementById('debugPanel');
+        if (d) d.style.display = 'none';
+      }, 3000);
+    }
+
+    // Multiple triggers to ensure start
+    window.onload = EDN_init;
+    document.addEventListener('DOMContentLoaded', EDN_init);
+    setTimeout(EDN_init, 2000); // Fallback for laggy webview loading
+  </script>
+</body>
+
+</html>

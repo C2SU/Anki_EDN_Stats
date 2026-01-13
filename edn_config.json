@@ -1,0 +1,8 @@
+{
+  "modules": {
+    "edn_progress": true
+  },
+  "shortcuts": {
+    "edn_progress": "Ctrl+U"
+  }
+}

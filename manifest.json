@@ -1,0 +1,11 @@
+{
+  "package": "edn_progress",
+  "name": "EDN Progress - Statistiques Anki EDN",
+  "version": "1.0.0",
+  "author": "Angelo Marciszewer",
+  "homepage": "https://github.com/yourusername/anki-edn-progress",
+  "description": "Visualisez votre progression de votre Deck Anki EDN (gratuit) avec des graphiques interactifs.",
+  "conflicts": [],
+  "min_point_version": 231000,
+  "max_point_version": 0
+}
