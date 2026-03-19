@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>EDN Progress — Statistiques</title>
+  <title>EDN Stat — Statistiques</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="style.css">
   <script src="chart.umd.min.js"></script>
@@ -11,7 +11,6 @@
 
 <body>
   <header>
-    <h1>EDN Progress</h1>
     <style>
       /* Inline override for specific requests */
       .modern-card {
@@ -159,18 +158,39 @@
         border-color: #555;
       }
 
+      .uniquement-btn, .uniquement-btn-dropdown {
+        font-size: 11px;
+        color: #2c7bb6;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: auto;
+      }
+      .uniquement-btn:hover, .uniquement-btn-dropdown:hover {
+        background: #e3f2fd;
+        text-decoration: underline;
+      }
+      body.nightMode .uniquement-btn, body.nightMode .uniquement-btn-dropdown {
+        color: #64b5f6;
+      }
+      body.nightMode .uniquement-btn:hover, body.nightMode .uniquement-btn-dropdown:hover {
+        background: #1565c0;
+      }
+
       .dropdown-content {
         display: none;
         position: absolute;
         background: #fff;
+        color: #333;
         border: 1px solid #ccc;
         border-radius: 4px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         z-index: 1000;
-        min-width: 200px;
+        min-width: 240px;
         max-height: 300px;
         overflow-y: auto;
         padding: 8px;
+        text-align: left;
       }
 
       body.nightMode .dropdown-content {
@@ -231,6 +251,8 @@
           <option value="studied_total_ratio">Ratio Appris/Total</option>
           <option value="unsuspended_share">Part Désuspendue</option>
         </select>
+        <span class="help-icon" id="helpIcon"
+          style="cursor:pointer; font-size:16px; margin-left:6px; display:none;">ⓘ</span>
       </label>
       <button id="settingsBtn" style="background:none; border:none; cursor:pointer;" title="Paramètres">⚙️</button>
       <button id="applyBtn">Appliquer</button>
@@ -243,7 +265,7 @@
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
     <div
       style="background:#fff; color:#000; padding:20px; border-radius:12px; width:550px; max-height:80vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-      <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:15px; font-size:1.3em;">
+      <h3 style="margin-top:0; border-bottom:0px solid #eee; padding-bottom:0px; margin-bottom:0px; font-size:0em;">
         Paramètres</h3>
 
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
@@ -254,20 +276,19 @@
             Couleurs</h4>
 
           <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Seuil Maîtrise ("Bon" si cartes matures > %)</span>
+            <span style="font-weight:600;">Seuil Maîtrise ("Bon" si > %)</span>
             <input type="number" id="colorThMastery" value="0.7" step="0.05" min="0" max="1"
               style="width:100%; padding:6px; box-sizing:border-box;">
           </label>
 
           <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Seuil Ratio Appris / Désuspendu ("Bon" si > %)</span>
+            <span style="font-weight:600;">Ratio Appris/Désuspendu ("Bon" si > %)</span>
             <input type="number" id="colorThRatio" value="0.7" step="0.05" min="0" max="1"
               style="width:100%; padding:6px; box-sizing:border-box;">
           </label>
 
           <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Seuil Ratio Appris / Total</span>
-            <small style="color:#666; display:block;">("Bon" si > %)</small>
+            <span style="font-weight:600;">Ratio Appris/Total ("Bon" si > %)</span>
             <input type="number" id="colorThTotalRatio" value="0.6" step="0.05" min="0" max="1"
               style="width:100%; padding:6px; box-sizing:border-box;">
           </label>
@@ -925,18 +946,33 @@
         let q = `tag:"${tag}"`;
         const separate = document.getElementById('sepSuspended')?.checked;
 
+        // Get current rang mode from the rangMode select
+        const rangMode = document.getElementById('rangMode')?.value || 'all';
+        let rangClause = '';
+
+        // Build rang filter clause
+        if (rangMode === 'onlyA') {
+          rangClause = ' (tag:Rang::A)';
+        } else if (rangMode === 'notA') {
+          rangClause = ' (-tag:Rang::A)';
+        }
+        // If 'all', no rang clause needed
+
         // Base exclusion clause (only when "Séparer" is ON)
-        const excludeClause = separate ? ' AND -(is:buried OR is:suspended)' : '';
+        const excludeClause = separate ? ' (-(is:buried OR is:suspended))' : '';
 
         // Mapping modes to queries
-        if (mode === 'new') q += ' is:new' + excludeClause;
-        else if (mode === 'learning') q += ' (-is:review AND is:learn)' + excludeClause;
-        else if (mode === 'relearning') q += ' (is:review AND is:learn)' + excludeClause;
-        else if (mode === 'recent') q += ' (is:review AND -is:learn) AND prop:ivl<21' + excludeClause;
-        else if (mode === 'mature') q += ' (is:review AND -is:learn) AND prop:ivl>=21' + excludeClause;
-        else if (mode === 'suspended') q += ' is:suspended';
-        else if (mode === 'buried') q += ' is:buried';
-        else if (mode === 'other') q += ' -(is:new OR is:learn OR is:review OR is:suspended OR is:buried)';
+        if (mode === 'new') q += ' (is:new)' + excludeClause;
+        else if (mode === 'learning') q += ' ((-is:review) (is:learn))' + excludeClause;
+        else if (mode === 'relearning') q += ' ((is:review) (is:learn))' + excludeClause;
+        else if (mode === 'recent') q += ' ((is:review) (-is:learn) (prop:ivl<21))' + excludeClause;
+        else if (mode === 'mature') q += ' ((is:review) (-is:learn) (prop:ivl>=21))' + excludeClause;
+        else if (mode === 'suspended') q += ' (is:suspended)';
+        else if (mode === 'buried') q += ' (is:buried)';
+        else if (mode === 'other') q += ' (-(is:new OR is:learn OR is:review OR is:suspended OR is:buried))';
+
+        // Add rang clause to the query (after card type filters but before excludeClause was added)
+        q += rangClause;
 
         send_py('open_search ' + q);
       };
@@ -961,23 +997,59 @@
       function updatePie() {
         const separate = checkbox.checked;
         // Data Points
-        let data = [
+        let data = [];
 
-          { label: 'Inédites', val: counts.new || 0, color: colors.new, key: 'new' },
-          { label: 'À repasser', val: counts.learning || 0, color: colors.learning, key: 'learning' },
-          { label: 'Réapprentissage', val: counts.relearning || 0, color: colors.relearning, key: 'relearning' },
-          { label: 'Récentes', val: counts.recent || 0, color: colors.recent, key: 'recent' },
-          { label: 'Matures', val: counts.mature || 0, color: colors.mature, key: 'mature' }
-        ];
+        if (separate) {
+          // Separate mode: show suspended and buried as separate categories
+          data = [
+            { label: 'Inédites', val: counts.new || 0, color: colors.new, key: 'new' },
+            { label: 'À repasser', val: counts.learning || 0, color: colors.learning, key: 'learning' },
+            { label: 'Réapprentissage', val: counts.relearning || 0, color: colors.relearning, key: 'relearning' },
+            { label: 'Récentes', val: counts.recent || 0, color: colors.recent, key: 'recent' },
+            { label: 'Matures', val: counts.mature || 0, color: colors.mature, key: 'mature' },
+            { label: 'Suspendues', val: counts.suspended || 0, color: colors.suspended, key: 'suspended' },
+            { label: 'Enfouies', val: counts.buried || 0, color: colors.buried, key: 'buried' }
+          ];
+        } else {
+          // Non-separate mode: include suspended/buried in their respective categories
+          // Use detailed counts to properly categorize
+          data = [
+            {
+              label: 'Inédites',
+              val: (counts.new || 0) + (counts.new_suspended || 0) + (counts.new_buried || 0),
+              color: colors.new,
+              key: 'new'
+            },
+            {
+              label: 'À repasser',
+              val: (counts.learning || 0) + (counts.learning_suspended || 0) + (counts.learning_buried || 0),
+              color: colors.learning,
+              key: 'learning'
+            },
+            {
+              label: 'Réapprentissage',
+              val: (counts.relearning || 0) + (counts.relearning_suspended || 0) + (counts.relearning_buried || 0),
+              color: colors.relearning,
+              key: 'relearning'
+            },
+            {
+              label: 'Récentes',
+              val: (counts.recent || 0) + (counts.recent_suspended || 0) + (counts.recent_buried || 0),
+              color: colors.recent,
+              key: 'recent'
+            },
+            {
+              label: 'Matures',
+              val: (counts.mature || 0) + (counts.mature_suspended || 0) + (counts.mature_buried || 0),
+              color: colors.mature,
+              key: 'mature'
+            }
+          ];
+        }
 
         // Add "Autres" if any cards are in that category
         if ((counts.other || 0) > 0) {
-          data.push({ label: 'Autres', val: counts.other || 0, color: colors.other, key: 'other' });
-        }
-
-        if (separate) {
-          data.push({ label: 'Suspendues', val: counts.suspended || 0, color: colors.suspended, key: 'suspended' });
-          data.push({ label: 'Enfouies', val: counts.buried || 0, color: colors.buried, key: 'buried' });
+          data.push({ label: 'Autres', val: counts.other || 0, color: colors.other || '#999', key: 'other' });
         }
 
         let pieTotal = data.reduce((acc, d) => acc + d.val, 0);
@@ -1128,8 +1200,46 @@
     els.metricSelect.addEventListener('change', (e) => {
       STATE.chartMetric = e.target.value;
       renderChart();
+      updateHelpIconVisibility();
       saveState(); // Auto-save metric preference
     });
+
+    // Help icon functionality
+    function updateHelpIconVisibility() {
+      const helpIcon = document.getElementById('helpIcon');
+      if (!helpIcon) return;
+
+      const metric = STATE.chartMetric;
+      // Show help icon only for mastery and difficulty modes
+      if (metric === 'mastery' || metric === 'difficulty') {
+        helpIcon.style.display = 'inline-block';
+      } else {
+        helpIcon.style.display = 'none';
+      }
+    }
+
+    function showHelpInfo() {
+      const metric = STATE.chartMetric;
+      let message = '';
+
+      if (metric === 'mastery') {
+        message = "Maîtrise : Part des cartes apprises qui sont dues > 21 jours\n\nCe graphique montre le pourcentage de cartes qui ont atteint un niveau de maîtrise suffisant (intervalle > 21 jours).";
+      } else if (metric === 'difficulty') {
+        message = "Difficulté : Médiane de la difficulté FSRS\n\nCe graphique affiche la médiane de la difficulté FSRS des cartes, qui représente la complexité moyenne des cartes de cet item.";
+      }
+
+      if (message) {
+        alert(message);
+      }
+    }
+
+    document.getElementById('helpIcon')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      showHelpInfo();
+    });
+
+    // Initialize help icon visibility
+    updateHelpIconVisibility();
 
     // Settings Logic
     const settingsModal = document.getElementById('settingsModal');
@@ -1533,13 +1643,37 @@
           checkbox.checked = false;
         }
 
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+
         const label = document.createElement('label');
         label.htmlFor = checkbox.id;
         label.style.marginLeft = '5px';
+        label.style.flexGrow = '1';
         label.textContent = isChild ? '└─ ' + subj.split('::').pop() : subj.split('::').pop();
+
+        const onlyBtn = document.createElement('span');
+        onlyBtn.textContent = 'Uniquement';
+        onlyBtn.className = 'uniquement-btn';
+        onlyBtn.style.display = 'none';
+        onlyBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const allCbs = Array.from(container.querySelectorAll('input[type=checkbox]'));
+          allCbs.forEach(c => c.checked = false);
+          checkbox.checked = true;
+          const presetSelect = document.getElementById('subjectPreset');
+          if (presetSelect) presetSelect.value = '';
+          syncSubjectsToDropdown();
+          saveState();
+        };
+
+        div.onmouseenter = () => onlyBtn.style.display = 'block';
+        div.onmouseleave = () => onlyBtn.style.display = 'none';
 
         div.appendChild(checkbox);
         div.appendChild(label);
+        div.appendChild(onlyBtn);
         container.appendChild(div);
       });
 
@@ -1643,6 +1777,9 @@
             if (subj.includes("::")) display = subj.split("::").pop().replace(/-/g, " ");
 
             const label = document.createElement('label');
+            label.style.display = 'flex';
+            label.style.alignItems = 'center';
+
             const cb = document.createElement('input');
             cb.type = 'checkbox';
             cb.value = subj;
@@ -1653,8 +1790,32 @@
               updateSubjectTriggerLabel();
               saveState();
             };
+            
+            const spanText = document.createElement('span');
+            spanText.textContent = display;
+            spanText.style.flexGrow = '1';
+            
+            const onlyBtn = document.createElement('span');
+            onlyBtn.textContent = 'Uniquement';
+            onlyBtn.className = 'uniquement-btn-dropdown';
+            onlyBtn.style.display = 'none';
+            onlyBtn.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const allCbs = Array.from(list.querySelectorAll('input[type=checkbox]'));
+              allCbs.forEach(c => c.checked = false);
+              cb.checked = true;
+              updateSubjectTriggerLabel();
+              saveState();
+              if (els.applyBtn) els.applyBtn.click();
+            };
+
+            label.onmouseenter = () => onlyBtn.style.display = 'block';
+            label.onmouseleave = () => onlyBtn.style.display = 'none';
+
             label.appendChild(cb);
-            label.appendChild(document.createTextNode(display));
+            label.appendChild(spanText);
+            label.appendChild(onlyBtn);
             list.appendChild(label);
           });
           updateSubjectTriggerLabel();
@@ -1717,7 +1878,7 @@
       els.includeChildren.checked = false;
       if (els.filterBySubject) els.filterBySubject.checked = false;
       updateSubjectFilterVisibility();
-      els.metricSelect.value = 'mastery';
+      els.metricSelect.value = 'studied_total_ratio'; // Default: Appris/Total
 
       // 2. Request saved state from Python (will overwrite defaults if state exists)
       console.log("Requesting saved state from Python...");
@@ -1731,9 +1892,21 @@
     }
 
     // Multiple triggers to ensure start
-    window.onload = EDN_init;
-    document.addEventListener('DOMContentLoaded', EDN_init);
-    setTimeout(EDN_init, 2000); // Fallback for laggy webview loading
+
+    // Robust initialization: wait for pycmd bridge
+    function waitForBridge() {
+      if (window.pycmd) {
+        EDN_init();
+      } else {
+        setTimeout(waitForBridge, 100);
+      }
+    }
+
+    // Multiple triggers to ensure start, but mediated by waitForBridge
+    window.onload = waitForBridge;
+    document.addEventListener('DOMContentLoaded', waitForBridge);
+    // Fallback if events already fired
+    setTimeout(waitForBridge, 500);
   </script>
 </body>
 

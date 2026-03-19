@@ -11,7 +11,8 @@ import os
 # Singleton menu instance
 _edn_menu = None
 _registered_modules = {}
-_config_path = os.path.join(os.path.dirname(__file__), "edn_config.json")
+# CRITICAL: Use profile folder for shared config across all EDN addons
+_config_path = os.path.join(mw.pm.profileFolder(), "edn_shared_config.json")
 
 def get_edn_menu():
     """Get or create the shared Anki EDN menu."""
@@ -44,7 +45,12 @@ def get_edn_menu():
 
 def register_module(module_id: str, name: str, description: str = "", 
                    default_enabled: bool = True):
-    """Register a module with the EDN system."""
+    """
+    Register a module with the EDN system.
+    This function ONLY declares the module, it does NOT control initialization.
+    Always returns True to allow modules to complete their initialization.
+    Use should_initialize_module() if you need to check if module is enabled.
+    """
     global _registered_modules
     _registered_modules[module_id] = {
         "name": name,
@@ -52,6 +58,15 @@ def register_module(module_id: str, name: str, description: str = "",
         "default_enabled": default_enabled,
         "actions": []
     }
+    # Always return True - module declaration should never fail
+    # The module can decide whether to initialize based on should_initialize_module()
+    return True
+
+def should_initialize_module(module_id: str) -> bool:
+    """
+    Check if a module should initialize based on user settings.
+    Use this instead of the return value of register_module().
+    """
     return is_module_enabled(module_id)
 
 def register_action(module_id: str, label: str, callback: Callable, 
@@ -147,7 +162,20 @@ def get_registered_modules() -> Dict:
     return _registered_modules.copy()
 
 def open_settings_dialog():
-    """Open the EDN settings dialog."""
-    from .settings_dialog import EDNSettingsDialog
-    dialog = EDNSettingsDialog(mw)
-    dialog.exec()
+    """Open the EDN settings dialog (requires settings_dialog.py)."""
+    try:
+        from .settings_dialog import EDNSettingsDialog
+        dialog = EDNSettingsDialog(mw)
+        dialog.exec()
+    except ImportError:
+        from aqt.utils import showInfo
+        showInfo(
+            "Configuration EDN non disponible.\n\n"
+            "Pour activer la gestion des modules et raccourcis, "
+            "copiez aussi les fichiers suivants depuis edn_menu_shared/ :\n"
+            "• settings_dialog.py\n"
+            "• shortcuts_dialog.py\n"
+            "• key_sequence_widget.py",
+            title="Composants optionnels manquants"
+        )
+

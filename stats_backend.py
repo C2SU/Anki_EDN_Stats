@@ -177,16 +177,36 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
     except Exception:
         nids = []
     
+    # DETAILED counts: track both suspension status AND card type
+    # This allows pie chart to properly categorize suspended/buried cards
+    counts = {
+        'new': 0,           # Active new cards (not suspended/buried)
+        'learning': 0,      # Active learning cards
+        'relearning': 0,    # Active relearning cards
+        'recent': 0,        # Active recent review cards
+        'mature': 0,        # Active mature cards
+        'suspended': 0,     # Suspended cards (any type)
+        'buried': 0,        # Buried cards (any type)
+        'other': 0,         # Other states
+        # Detailed breakdown for frontend
+        'new_suspended': 0,
+        'new_buried': 0,
+        'learning_suspended': 0,
+        'learning_buried': 0,
+        'relearning_suspended': 0,
+        'relearning_buried': 0,
+        'recent_suspended': 0,
+        'recent_buried': 0,
+        'mature_suspended': 0,
+        'mature_buried': 0
+    }
     
-    counts = {'new':0,'learning':0,'relearning':0,'recent':0,'mature':0,'suspended':0,'buried':0,'other':0}
     total = 0
     subject_overlap_count = 0
     card_objs = []
     notes_skipped_rang = 0
     
     # Pre-process subject filter for fast checking
-    # Filter is list of tags e.g. ["Matière::Cardio"]
-    # We match if note tag STARTSWITH subject (since subject includes children)
     filter_roots = [s.lower() for s in (subject_filter or [])]
 
     for nid in nids:
@@ -194,7 +214,8 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
             note = mw.col.get_note(nid)
         except Exception:
             continue
-        # note tag-based rang filter (simple normalization)
+            
+        # note tag-based rang filter
         ntags_lower = [t.lower().replace('-', '::').replace('_', '::') for t in (note.tags or [])]
         
         if only_rang:
@@ -207,11 +228,6 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
         # Subject Overlap Check
         matches_subject = False
         if filter_roots:
-             # If ANY note tag starts with ANY filter root
-             # Optimization: ntags are full tags. filter_roots are "matière::cardio"
-             # Check if "matière::cardio::ecg" starts with "matière::cardio"
-             # Note: Anki tags are string matches.
-             # We should rely on standard string startswith
              for t in ntags_lower:
                  for root in filter_roots:
                      if t == root or t.startswith(root + "::") or t.startswith(root + "-") or t.startswith(root + "_"):
@@ -219,53 +235,117 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
                          break
                  if matches_subject: break
         
-        # Count by NOTE, not by card
-        # Determine note state from its cards using priority:
-        # Priority (lowest number = note inherits this state):
-        # 1. suspended (if ALL cards are suspended)
-        # 2. buried (if ALL cards are buried)
-        # 3. new (if ANY non-suspended/buried card is new)
-        # 4. learning (if ANY card is in learning)
-        # 5. relearning (if ANY card is in relearning)
-        # 6. recent (if ANY card is recent)
-        # 7. mature (if ALL active cards are mature)
-        # 8. other
-        
+        # Get all cards for this note
         note_cards = list(cards_of_note(note))
         card_objs.extend(note_cards)
         
         if not note_cards:
             continue
+        
+        # Classify each card with DETAILED state tracking
+        # We need to know BOTH the suspension status AND the card type
+        card_states = []
+        for c in note_cards:
+            q = getattr(c, 'queue', None)
+            typ = getattr(c, 'type', None)
+            ivl = getattr(c, 'ivl', 0)
             
-        card_states = [_classify_card(c, mature_ivl=mature_ivl) for c in note_cards]
-        
-        # Determine note state
-        if all(s == 'suspended' for s in card_states):
-            note_state = 'suspended'
-        elif all(s == 'buried' for s in card_states):
-            note_state = 'buried'
-        elif all(s in ('suspended', 'buried') for s in card_states):
-            # All cards are either suspended or buried
-            note_state = 'suspended' if 'suspended' in card_states else 'buried'
-        else:
-            # Active cards only (not suspended/buried)
-            active_states = [s for s in card_states if s not in ('suspended', 'buried')]
-            if not active_states:
-                note_state = 'suspended'
-            elif 'new' in active_states:
-                note_state = 'new'
-            elif 'learning' in active_states:
-                note_state = 'learning'
-            elif 'relearning' in active_states:
-                note_state = 'relearning'
-            elif 'recent' in active_states:
-                note_state = 'recent'
-            elif 'mature' in active_states:
-                note_state = 'mature'
+            # Determine base type (ignoring suspension)
+            in_learning_queue = q in (1, 3)
+            
+            if typ == 0:
+                base_type = 'new'
+            elif in_learning_queue:
+                base_type = 'relearning' if typ == 2 else 'learning'
+            elif typ == 2:
+                base_type = 'mature' if ivl >= mature_ivl else 'recent'
+            elif typ == 3:
+                base_type = 'relearning'
+            elif typ == 1:
+                base_type = 'learning'
             else:
-                note_state = 'other'
+                base_type = 'other'
+            
+            # Determine suspension status
+            if q == -1:
+                suspension = 'suspended'
+            elif q == -2:
+                suspension = 'buried'
+            else:
+                suspension = 'active'
+            
+            card_states.append((base_type, suspension))
         
-        counts[note_state] = counts.get(note_state, 0) + 1
+        # Determine NOTE state using priority system
+        # Priority for active cards: new > learning > relearning > recent > mature
+        # If ALL cards are suspended/buried, note inherits that state
+        
+        active_states = [(bt, _) for bt, _ in card_states if _ == 'active']
+        all_suspended = all(s == 'suspended' for _, s in card_states)
+        all_buried = all(s == 'buried' for _, s in card_states)
+        all_suspended_or_buried = all(s in ('suspended', 'buried') for _, s in card_states)
+        
+        if all_suspended:
+            # Determine what TYPE of suspended (use highest priority active type)
+            # Check types in priority order
+            has_new_suspended = any(bt == 'new' and s == 'suspended' for bt, s in card_states)
+            has_learning_suspended = any(bt == 'learning' and s == 'suspended' for bt, s in card_states)
+            has_relearning_suspended = any(bt == 'relearning' and s == 'suspended' for bt, s in card_states)
+            has_recent_suspended = any(bt == 'recent' and s == 'suspended' for bt, s in card_states)
+            has_mature_suspended = any(bt == 'mature' and s == 'suspended' for bt, s in card_states)
+            
+            if has_new_suspended:
+                counts['new_suspended'] += 1
+            elif has_learning_suspended:
+                counts['learning_suspended'] += 1
+            elif has_relearning_suspended:
+                counts['relearning_suspended'] += 1
+            elif has_recent_suspended:
+                counts['recent_suspended'] += 1
+            elif has_mature_suspended:
+                counts['mature_suspended'] += 1
+            
+            counts['suspended'] += 1
+            
+        elif all_buried:
+            # Determine what TYPE of buried
+            has_new_buried = any(bt == 'new' and s == 'buried' for bt, s in card_states)
+            has_learning_buried = any(bt == 'learning' and s == 'buried' for bt, s in card_states)
+            has_relearning_buried = any(bt == 'relearning' and s == 'buried' for bt, s in card_states)
+            has_recent_buried = any(bt == 'recent' and s == 'buried' for bt, s in card_states)
+            has_mature_buried = any(bt == 'mature' and s == 'buried' for bt, s in card_states)
+            
+            if has_new_buried:
+                counts['new_buried'] += 1
+            elif has_learning_buried:
+                counts['learning_buried'] += 1
+            elif has_relearning_buried:
+                counts['relearning_buried'] += 1
+            elif has_recent_buried:
+                counts['recent_buried'] += 1
+            elif has_mature_buried:
+                counts['mature_buried'] += 1
+            
+            counts['buried'] += 1
+            
+        elif all_suspended_or_buried:
+            # Mixed suspended and buried - treat as suspended for main category
+            counts['suspended'] += 1
+        else:
+            # Has active cards - use priority system
+            if 'new' in [bt for bt, s in active_states]:
+                counts['new'] += 1
+            elif 'learning' in [bt for bt, s in active_states]:
+                counts['learning'] += 1
+            elif 'relearning' in [bt for bt, s in active_states]:
+                counts['relearning'] += 1
+            elif 'recent' in [bt for bt, s in active_states]:
+                counts['recent'] += 1
+            elif 'mature' in [bt for bt, s in active_states]:
+                counts['mature'] += 1
+            else:
+                counts['other'] += 1
+        
         total += 1
         if matches_subject:
             subject_overlap_count += 1

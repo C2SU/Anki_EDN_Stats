@@ -11,22 +11,18 @@
 ### Graphiques Interactifs
 - 📈 **Visualisation par items** : Progression détaillée item par item (300+)
 - 🧬 **Visualisation par matières** : Filtrage par spécialités médicales
-- 🔍 **Visualisation SDD/SSDD** : situations de départ
+- 🔍 **Visualisation SDD** : Situations de départ
 
 ### Métriques Avancées
 - 🎯 **Difficulté FSRS intégrée** : Utilise le système de difficulté FSRS natif d'Anki 23.10+
 - 📊 **Statistiques de maîtrise** : Cartes matures vs. total
 - 📉 **Ratio Appris/Désuspendu** : Suivi de progression réelle
 - 🏷️ **Filtrage par rang** : Rang A uniquement, Rang B/C, ou tous
-
-### Gestion des Préférences
-- 💾 **Presets personnalisables** : Sauvegardez vos sélections de sujets favoris
-- 🎨 **Interface moderne** : Design responsive avec graphiques Chart.js
 - 📁 **Export CSV** : Exportez vos statistiques pour analyse externe
 
 ### Intégration EDN
 - 🔗 **Menu partagé Anki EDN** : S'intègre au menu centralisé pour tous les addons EDN
-- ⌨️ **Raccourci clavier** : `Ctrl+Shift+P` pour accès rapide
+- ⌨️ **Raccourci clavier** : `Ctrl+U` pour accès rapide
 - 🔧 **Configuration centralisée** : Gestion via le menu "⚙️ Paramètres EDN"
 
 ## 🚀 Installation
@@ -45,7 +41,7 @@
 
 ### Accès
 - **Menu** : `Anki EDN → 📊 EDN Progress`
-- **Raccourci** : `Ctrl+Shift+P`
+- **Raccourci** : `Ctrl+U`
 
 ### Interface Principale
 
@@ -66,7 +62,7 @@
 
 ### Presets Standards
 
-L'addon inclut un bouton "**Sélection Standard (37)**" pour activer rapidement les 37 matières principales EDN recommandées.
+L'addon inclut un bouton "**Sélection Standard (32)**" pour activer rapidement les 32 matières principales EDN recommandées.
 
 ## 🛠️ Compatibilité
 
@@ -101,7 +97,7 @@ Utiliser le bouton "📁 Export CSV" en bas de l'interface. Le fichier CSV peut 
 
 ### Mon graphique est vide ?
 Vérifier que :
-- Vous avez des cartes EDN dans votre collection
+- Vous avez des cartes Anki EDN dans votre collection
 - Les filtres ne sont pas trop restrictifs
 - Le seuil de suspension n'est pas trop élevé
 
@@ -120,8 +116,7 @@ Ce projet est partagé librement pour la communauté Anki EDN.
 
 ## 🙏 Remerciements
 
-- **Deck Anki EDN** : Pour le contenu de qualité
-- **Communauté Anki** : Pour le support et les retours
+- **Communauté Anki EDN** 
 - **Chart.js** : Pour la bibliothèque de graphiques
 
 ## 🔗 Liens
@@ -131,5 +126,3 @@ Ce projet est partagé librement pour la communauté Anki EDN.
 - **Support** : [AnkiWeb Comments](https://ankiweb.net/shared/info/...)
 
 ---
-
-**Note** : Cet addon est un projet communautaire indépendant, non affilié officiellement au deck Anki EDN.

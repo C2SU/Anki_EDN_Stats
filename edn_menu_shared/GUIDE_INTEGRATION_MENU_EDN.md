@@ -1,32 +1,52 @@
 # Guide d'Intégration au Menu Anki EDN
 
-Ce guide explique comment intégrer un **nouvel addon** au système de menu partagé Anki EDN, surtout pour les addons créés **après** l'existence du menu.
+Ce guide explique comment intégrer un **nouvel addon** au système de menu partagé Anki EDN.
 
 ---
 
 ## 📋 Vue d'ensemble
 
-Le système `shared_menu.py` permet à tous les addons EDN de partager un seul menu "Anki EDN" dans la barre de menu d'Anki, avec :
+Le système `edn_menu_shared/` permet à tous les addons EDN de partager un seul menu "Anki EDN" dans la barre de menu d'Anki, avec :
 - ✅ Activation/désactivation des modules
 - ✅ Raccourcis personnalisables
 - ✅ Configuration centralisée
-- ✅ Dialog de paramètres intégré
+- ✅ Dialog de paramètres intégré (optionnel)
 
 ---
 
 ## 🚀 Intégration d'un nouvel addon
 
-### Étape 1 : Structure du projet
+### Étape 1 : Choisir votre niveau d'intégration
+
+#### **Niveau 1 : Minimal** (Menu uniquement)
+Copiez **seulement** `shared_menu.py` dans votre addon.
 
 ```
 MonNouvelAddonEDN/
-├── __init__.py          # Point d'entrée
-├── shared_menu.py       # ← COPIER depuis Anki_EDN_Assistant
-├── ma_fonction.py       # Votre code
-└── ...
+├── __init__.py          
+├── edn_menu_shared/
+│   └── shared_menu.py       ← Copier depuis Anki_EDN_Stats
+└── ma_fonction.py       
 ```
 
-**Important** : Copier le fichier `shared_menu.py` depuis `Anki_EDN_Assistant` dans votre nouvel addon.
+**Résultat** : Menu fonctionne, bouton "⚙️ Paramètres" affiche un message d'info.
+
+#### **Niveau 2 : Standard** (Recommandé - avec UI)
+Copiez **tout le dossier** `edn_menu_shared/` dans votre addon.
+
+```
+MonNouvelAddonEDN/
+├── __init__.py
+├── edn_menu_shared/         ← COPIER le dossier complet
+│   ├── __init__.py
+│   ├── shared_menu.py
+│   ├── settings_dialog.py
+│   ├── shortcuts_dialog.py
+│   └── key_sequence_widget.py
+└── ma_fonction.py
+```
+
+**Résultat** : Menu + Configuration complète des modules et raccourcis.
 
 ---
 
@@ -38,7 +58,7 @@ Mon Nouvel Addon EDN
 Description de l'addon
 """
 from aqt import gui_hooks
-from .shared_menu import register_module, register_action
+from .edn_menu_shared import register_module, register_action
 
 def init_mon_addon():
     """Initialise l'addon et s'enregistre au menu EDN."""

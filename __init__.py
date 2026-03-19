@@ -1,4 +1,4 @@
-# __init__.py — EDN Progress (Anki 25.09, Qt6) - main entry & bridge
+# __init__.py — EDN Stat (Anki 25.09, Qt6) - main entry & bridge
 from __future__ import annotations
 import os, json
 from aqt import mw, gui_hooks
@@ -10,6 +10,9 @@ from . import stats_backend
 
 ADDON_PATH = os.path.dirname(__file__)
 INDEX_HTML = os.path.join(ADDON_PATH, "web", "index.html")
+
+# Register web exports to allow serving files from the addon folder
+mw.addonManager.setWebExports(__name__, r".+\.(css|js|png|jpg|jpeg|svg|json|html)$")
 
 
 def open_tag_in_browser(tag: str) -> None:
@@ -59,14 +62,15 @@ def collect_lite_data(*args, **kwargs):
 
 def open_edn_progress() -> None:
     if not os.path.exists(INDEX_HTML):
-        showInfo("EDN Progress: web/index.html introuvable dans l'addon.")
+        showInfo("EDN Stat: web/index.html introuvable dans l'addon.")
         return
 
-    dock = QDockWidget("EDN Progress", mw)
+    dock = QDockWidget("EDN Stat", mw)
     dock.setObjectName("EDN_PROGRESS_DOCK")
     dock.setAllowedAreas(Qt.DockWidgetArea.AllDockWidgetAreas)
 
     web = AnkiWebView(parent=mw)
+    dock.setMinimumWidth(500) # User request: open with more space
     dock.setWidget(web)
 
     # User Request: Standard window controls (Min/Max/Close) when floating
@@ -289,6 +293,14 @@ def open_edn_progress() -> None:
     # This ensures presets are available in JavaScript cache on startup
     html = html.replace("/*__DATA_INJECTION__*/", f"window.EDN_DATA = {json.dumps(initial)}; setTimeout(function() {{ if(window.pycmd) {{ pycmd('load_state'); setTimeout(function() {{ pycmd('recompute_initial'); }}, 50); }} }}, 100);")
 
+    # Dynamically fix paths for CSS and JS to use Anki's local server (robust /_addons/ path)
+    addon_package = mw.addonManager.addonFromModule(__name__)
+    web_prefix = f"/_addons/{addon_package}/web"
+    
+    html = html.replace('href="style.css"', f'href="{web_prefix}/style.css"')
+    html = html.replace('src="chart.umd.min.js"', f'src="{web_prefix}/chart.umd.min.js"')
+    
+    # Use standard stdHtml
     web.stdHtml(html)
 
     # Install bridge
@@ -311,31 +323,43 @@ def open_edn_progress() -> None:
 
 def init_edn_progress():
     """Initialize EDN Progress and register with shared menu."""
+    print("[EDN Stats] Starting initialization...")
     try:
-        from .shared_menu import register_module, register_action
+        from .edn_menu_shared import register_module, register_action, should_initialize_module
+        print("[EDN Stats] Import successful")
         
-        # Register module
-        if not register_module(
+        # Register module (always succeeds - just declares the module)
+        register_module(
             module_id="edn_progress",
-            name="EDN Progress",
+            name="EDN Stat",
             description="Statistiques de progression et difficulté des items EDN",
             default_enabled=True
-        ):
+        )
+        print("[EDN Stats] Module registered")
+        
+        # Check if module should initialize
+        should_init = should_initialize_module("edn_progress")
+        print(f"[EDN Stats] should_initialize_module returned: {should_init}")
+        if not should_init:
+            print("[EDN Stats] Module disabled by user, exiting")
             return  # Module disabled by user
         
         # Register menu action
         register_action(
             module_id="edn_progress",
-            label="EDN Progress",
+            label="EDN Stat",
             callback=open_edn_progress,
             shortcut="Ctrl+U"
         )
-    except ImportError:
+        print("[EDN Stats] Menu action registered successfully")
+    except ImportError as e:
         # Fallback if shared_menu not available
-        action = QAction("EDN Progress", mw)
+        print(f"[EDN Stats] ImportError: {e}, using fallback")
+        action = QAction("EDN Stat", mw)
         action.triggered.connect(open_edn_progress)
         mw.form.menuTools.addAction(action)
-    except Exception:
+    except Exception as e:
+        print(f"[EDN Stats] Exception during init: {e}")
         import traceback
         traceback.print_exc()
 
