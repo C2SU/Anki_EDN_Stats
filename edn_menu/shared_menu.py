@@ -10,9 +10,21 @@ import os
 
 # Singleton menu instance
 _edn_menu = None
-_registered_modules = {}
-# CRITICAL: Use profile folder for shared config across all EDN addons
-_config_path = os.path.join(mw.pm.profileFolder(), "edn_shared_config.json")
+_config_path = None  # Will be initialized lazily when needed
+
+def _get_registry() -> dict:
+    """Get the global module registry shared across all EDN addons via mw."""
+    if not hasattr(mw, '_edn_registered_modules'):
+        mw._edn_registered_modules = {}
+    return mw._edn_registered_modules
+
+def _get_config_path():
+    """Get config path (lazy initialization to avoid profile loading issues)."""
+    global _config_path
+    if _config_path is None:
+        # CRITICAL: Use profile folder for shared config across all EDN addons
+        _config_path = os.path.join(mw.pm.profileFolder(), "edn_shared_config.json")
+    return _config_path
 
 def get_edn_menu():
     """Get or create the shared Anki EDN menu."""
@@ -51,8 +63,8 @@ def register_module(module_id: str, name: str, description: str = "",
     Always returns True to allow modules to complete their initialization.
     Use should_initialize_module() if you need to check if module is enabled.
     """
-    global _registered_modules
-    _registered_modules[module_id] = {
+    registry = _get_registry()
+    registry[module_id] = {
         "name": name,
         "description": description,
         "default_enabled": default_enabled,
@@ -100,8 +112,9 @@ def register_action(module_id: str, label: str, callback: Callable,
         menu.addAction(action)
     
     # Track action
-    if module_id in _registered_modules:
-        _registered_modules[module_id]["actions"].append({
+    registry = _get_registry()
+    if module_id in registry:
+        registry[module_id]["actions"].append({
             "label": label,
             "shortcut": shortcut,
             "action": action
@@ -111,9 +124,10 @@ def register_action(module_id: str, label: str, callback: Callable,
 
 def get_config() -> dict:
     """Load EDN configuration."""
-    if os.path.exists(_config_path):
+    config_path = _get_config_path()
+    if os.path.exists(config_path):
         try:
-            with open(_config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except:
             pass
@@ -121,7 +135,8 @@ def get_config() -> dict:
 
 def save_config(config: dict):
     """Save EDN configuration."""
-    with open(_config_path, 'w', encoding='utf-8') as f:
+    config_path = _get_config_path()
+    with open(config_path, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
 
 def is_module_enabled(module_id: str) -> bool:
@@ -131,8 +146,9 @@ def is_module_enabled(module_id: str) -> bool:
     if module_id in modules:
         return modules[module_id]
     # Default to enabled if not configured
-    if module_id in _registered_modules:
-        return _registered_modules[module_id].get("default_enabled", True)
+    registry = _get_registry()
+    if module_id in registry:
+        return registry[module_id].get("default_enabled", True)
     return True
 
 def set_module_enabled(module_id: str, enabled: bool):
@@ -159,7 +175,7 @@ def set_shortcut(module_id: str, shortcut: str):
 
 def get_registered_modules() -> Dict:
     """Get all registered modules."""
-    return _registered_modules.copy()
+    return _get_registry().copy()
 
 def open_settings_dialog():
     """Open the EDN settings dialog (requires settings_dialog.py)."""

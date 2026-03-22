@@ -217,6 +217,20 @@
         font-size: 10px;
         margin-top: 4px;
       }
+
+      /* Dark mode: CSV button and settings button */
+      body.nightMode #exportCsv {
+        background: #1e3a5f !important;
+        color: #90caf9 !important;
+        border-color: #2c5282 !important;
+      }
+      body.nightMode #settingsBtn {
+        border-color: rgba(255,255,255,0.2) !important;
+        color: #ccc !important;
+      }
+      body.nightMode .top-controls {
+        border-color: rgba(255,255,255,0.08) !important;
+      }
     </style>
     <!-- Tabs removed as requested -->
     <div class="top-controls">
@@ -242,7 +256,7 @@
           </div>
         </div>
       </div>
-      <div style="border-left:1px solid rgba(255,255,255,0.3); height:20px; margin:0 8px;"></div>
+      <div style="border-left:1px solid rgba(0,0,0,0.15); height:20px; margin:0 4px;"></div>
       <label>Graphique :
         <select id="chartMetric">
           <option value="mastery">Maîtrise</option>
@@ -254,9 +268,11 @@
         <span class="help-icon" id="helpIcon"
           style="cursor:pointer; font-size:16px; margin-left:6px; display:none;">ⓘ</span>
       </label>
-      <button id="settingsBtn" style="background:none; border:none; cursor:pointer;" title="Paramètres">⚙️</button>
-      <button id="applyBtn">Appliquer</button>
-      <button id="exportCsv" style="background:rgba(255,255,255,0.2); margin-left:auto;">CSV</button>
+      <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <button id="applyBtn">Appliquer</button>
+        <button id="exportCsv" style="background:#e8f0fe; color:#1a56db; border:1px solid #c3d5f7;">CSV</button>
+        <button id="settingsBtn" style="background:none; border:1px solid rgba(0,0,0,0.15); cursor:pointer; color:#555; padding:6px 10px;" title="Paramètres">⚙️</button>
+      </div>
     </div>
   </header>
 
@@ -264,7 +280,7 @@
   <div id="settingsModal"
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
     <div
-      style="background:#fff; color:#000; padding:20px; border-radius:12px; width:550px; max-height:80vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+      style="background:#fff; color:#000; padding:20px; border-radius:12px; width:550px; max-height:95vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
       <h3 style="margin-top:0; border-bottom:0px solid #eee; padding-bottom:0px; margin-bottom:0px; font-size:0em;">
         Paramètres</h3>
 
@@ -424,7 +440,7 @@
         style="background:#fff3cd; border:1px solid #ffc107; padding:10px; margin:10px 0; border-radius:4px; font-family:monospace; font-size:12px; display:none;">
       </div>
 
-      <section id="detailView" style="margin-top:20px; min-height:100px;">
+      <section id="detailView" style="margin-top:20px; display:none;">
         <div id="detail"
           style="background:#fff; padding:16px; border-radius:8px; border:1px solid #e0e0e0; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
           <p style="color:#666; font-style:italic;" id="detailHelpText">Cliquez sur un item dans la liste ou le
@@ -502,7 +518,7 @@
 
     const STANDARD_EDN_SUBJECTS = [
       "Anatomie", "Anatomo-pathologie", "Antibiothérapie", "Cardiologie",
-      "Dermatologie", "Douleur", "ECG", "Endocrinologie", "Gastro-entérologie",
+      "Dermatologie", "Douleur", "Endocrinologie", "Gastro-entérologie",
       "Gynécologie", "Gériatrie", "Hématologie", "Imagerie",
       "Immunologie", "Infectiologie", "LCA", "Locomoteur", "MPR", "Neurologie",
       "Nutrition", "Néphrologie", "Oncologie", "Ophtalmologie", "ORL",
@@ -603,7 +619,19 @@
             },
             x: {
               grid: { display: false },
-              ticks: { autoSkip: true, maxRotation: 90, minRotation: 45, color: textColor }
+              ticks: { 
+                autoSkip: true, 
+                maxRotation: 90, 
+                minRotation: 45, 
+                color: textColor,
+                callback: function(value, index, values) {
+                  let label = this.getLabelForValue(value);
+                  if (label && label.length > 35) {
+                    return label.substring(0, 35) + '…';
+                  }
+                  return label;
+                }
+              }
             }
           },
           layout: {
@@ -709,7 +737,11 @@
         // Optional: IntersectionObserver for auto-load
         setupInfiniteScroll();
       } else {
-        els.loadMore.innerHTML = '<span style="color:#aaa;">Tous les items affichés</span>';
+        const mode2 = STATE.data.mode || 'items';
+        let allLabel = 'Tous les items affichés';
+        if (mode2 === 'sdd') allLabel = 'Toutes les situations de départ affichées';
+        else if (mode2 === 'subject') allLabel = 'Toutes les matières affichées';
+        els.loadMore.innerHTML = `<span style="color:#aaa;">${allLabel}</span>`;
       }
     }
 
@@ -977,6 +1009,7 @@
         send_py('open_search ' + q);
       };
 
+      els.detailView.style.display = 'block';
       els.detailView.scrollIntoView({ behavior: 'smooth' });
 
       // Pie Chart Logic
@@ -1114,13 +1147,15 @@
     const sortContainer = document.getElementById('sortControlsContainer');
     if (sortContainer) {
       sortContainer.innerHTML = `
-    <span>Trier par:</span>
-    <button data-sort="studied_ratio">Ratio Appris/Désusp</button>
-    <button data-sort="studied_total_ratio">Ratio Appris/Total</button>
-    <button data-sort="mastery">Maîtrise</button>
-    <button data-sort="difficulty">Difficulté</button>
-    <button data-sort="unsuspended_share">Part Désuspendue</button>
-    <span class="sort-dir">↓</span>
+    <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+    <span style="white-space:nowrap;">Trier par:</span>
+    <button data-sort="studied_ratio" style="white-space:nowrap;">Ratio Appris/Désusp</button>
+    <button data-sort="studied_total_ratio" style="white-space:nowrap;">Ratio Appris/Total</button>
+    <button data-sort="mastery" style="white-space:nowrap;">Maîtrise</button>
+    <button data-sort="difficulty" style="white-space:nowrap;">Difficulté</button>
+    <button data-sort="unsuspended_share" style="white-space:nowrap;">Part Désuspendue</button>
+    <span class="sort-dir" style="white-space:nowrap;">↓</span>
+    </div>
     `;
       sortContainer.querySelectorAll('button').forEach(b => {
         const sortValue = b.dataset.sort;
@@ -1718,9 +1753,10 @@
       STATE.data = data;
       renderChart();
       renderPages();
+      updateHelpText();
       const meta = data.meta || {};
-      document.getElementById('metaBox').innerHTML = `<b>Items:</b> ${meta.total_units || 0} — <b>Médiane Maîtrise:</b>
-    ${pct(meta.median_mastery)}% — <b>Critiques:</b> ${meta.num_critical_items || 0}`;
+      const modeLabel = (data.mode === 'sdd') ? 'SDD' : (data.mode === 'subject') ? 'Matières' : 'Items';
+      document.getElementById('metaBox').innerHTML = `<b>${modeLabel}:</b> ${meta.total_units || 0} — <b>Médiane Maîtrise:</b> ${pct(meta.median_mastery)}% — <b>Critiques:</b> ${meta.num_critical_items || 0}`;
 
 
       if (meta.available_subjects) {

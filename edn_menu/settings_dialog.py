@@ -168,7 +168,7 @@ class EDNSettingsDialog(QDialog):
                 background-color: #1b1f23;
             }
         """)
-        github_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://github.com/yourusername/anki-edn-progress")))
+        github_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://github.com/C2SU")))
         links_layout.addWidget(github_btn)
         
         links_layout.addStretch()

@@ -11,7 +11,7 @@ Copiez **seulement** `shared_menu.py` dans votre addon.
 ```
 MonAddon/
 ├── __init__.py
-└── edn_menu_shared/
+└── edn_menu/
     └── shared_menu.py    ← Menu fonctionne, pas d'UI de config
 ```
 
@@ -21,12 +21,12 @@ MonAddon/
 
 ### Niveau 2 : Standard (avec Configuration)
 
-Copiez **tout le dossier** `edn_menu_shared/` dans votre addon.
+Copiez **tout le dossier** `edn_menu/` dans votre addon.
 
 ```
 MonAddon/
 ├── __init__.py
-└── edn_menu_shared/
+└── edn_menu/
     ├── __init__.py
     ├── shared_menu.py
     ├── settings_dialog.py
@@ -38,7 +38,7 @@ MonAddon/
 
 **Résultat** : Menu + Configuration complète des modules et raccourcis + Logos Anki EDN.
 
-> **Note** : La configuration est partagée entre tous les addons EDN via `edn_shared_config.json` dans le profil Anki.
+> **Note** : La configuration est partagée entre tous les addons EDN via `edn_shared_config.json` dans le profil Anki. Le registre des modules est global via `mw._edn_registered_modules`.
 
 ---
 
@@ -46,7 +46,7 @@ MonAddon/
 
 ```python
 # Dans votre __init__.py
-from .edn_menu_shared import register_module, register_action
+from .edn_menu import register_module, register_action
 
 def init_mon_addon():
     # Enregistrer le module
@@ -74,7 +74,7 @@ gui_hooks.main_window_did_init.append(init_mon_addon)
 
 ## 📚 Documentation complète
 
-Consultez [GUIDE_INTEGRATION.md](GUIDE_INTEGRATION.md) pour :
+Consultez [GUIDE_INTEGRATION_MENU_EDN.md](GUIDE_INTEGRATION_MENU_EDN.md) pour :
 - Exemples détaillés
 - API complète
 - Bonnes pratiques
@@ -86,24 +86,24 @@ Consultez [GUIDE_INTEGRATION.md](GUIDE_INTEGRATION.md) pour :
 
 | Fichier | Requis | Description |
 |---------|--------|-------------|
-| `shared_menu.py` | ✅ **Obligatoire** | Core du système de menu |
+| `shared_menu.py` | ✅ **Obligatoire** | Core du système de menu et registre global |
 | `__init__.py` | ✅ **Recommandé** | API publique du package |
 | `settings_dialog.py` | 🔹 Optionnel | UI de configuration des modules |
 | `shortcuts_dialog.py` | 🔹 Optionnel | UI de gestion des raccourcis |
 | `key_sequence_widget.py` | 🔹 Optionnel | Widget pour saisir les raccourcis |
-| `GUIDE_INTEGRATION.md` | 📖 Documentation | Guide complet d'intégration |
+| `GUIDE_INTEGRATION_MENU_EDN.md` | 📖 Documentation | Guide complet d'intégration |
 
 ---
 
 ## 🎨 Interopérabilité
 
 Ce système permet à **plusieurs addons EDN** de partager le même menu "Anki EDN" :
-- ✅ Détection automatique du menu existant
-- ✅ Pas de conflit entre addons
-- ✅ Configuration centralisée dans `edn_config.json`
-- ✅ Fonctionne quel que soit l'ordre d'installation
+- ✅ Détection automatique du menu existant via objectName
+- ✅ Registre de modules global (`mw._edn_registered_modules`)
+- ✅ Configuration centralisée dans `edn_shared_config.json` au niveau du profil
+- ✅ Fonctionne quel que soit l'ordre de chargement des Addons
 
 ---
 
-**Version** : 1.0.0  
+**Version** : 2.0.0 (Registre global)  
 **Licence** : Compatible avec vos addons EDN

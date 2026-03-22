@@ -21,7 +21,8 @@ body.nightMode {
 }
 
 body.nightMode header {
-  background: #2f2f31;
+  background: transparent;
+  color: #e0e0e0;
   box-shadow: none;
   border-bottom: 1px solid #444;
 }
@@ -78,10 +79,10 @@ body.nightMode .stat-label {
 
 
 header {
-  background: #ffffff;
+  background: transparent;
   color: #333;
   padding: 12px 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
   border-bottom: 1px solid var(--border);
 }
 
@@ -98,10 +99,10 @@ h1 {
 }
 
 .tab {
-  background: rgba(255, 255, 255, 0.2);
-  border: 0;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   padding: 8px 14px;
-  color: #fff;
+  color: #333;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
@@ -109,31 +110,31 @@ h1 {
 }
 
 .tab:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .tab.active {
-  background: #fff;
-  color: var(--ankiblue);
+  background: var(--ankiblue);
+  color: #fff;
   font-weight: 600;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: var(--ankiblue);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .top-controls {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
-  margin-top: 12px;
+  margin-top: 0;
   flex-wrap: wrap;
-  background: rgba(0, 0, 0, 0.05);
-  padding: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 8px 12px;
   border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
 }
 
 main {
   padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 .tab-content {

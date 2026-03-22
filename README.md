@@ -4,26 +4,25 @@
 
 ## 📊 Vue d'ensemble
 
-**EDN Progress** est un addon conçu pour les utilisateurs du **deck Anki EDN** (Externat médecine - gratuit et libre de droit). Il offre une visualisation complète de votre progression et de la difficulté FSRS de vos items EDN.
+**EDN Progress** est un addon conçu pour les utilisateurs du [**deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/) (gratuit et communautaire). Il offre une visualisation complète de votre progression et permet d'identfier vos difficultés.
 
 ## ✨ Fonctionnalités
 
 ### Graphiques Interactifs
-- 📈 **Visualisation par items** : Progression détaillée item par item (300+)
-- 🧬 **Visualisation par matières** : Filtrage par spécialités médicales
-- 🔍 **Visualisation SDD** : Situations de départ
+- 📈 **Visualisation par items** 
+- 🧬 **Visualisation par matières** 
+- 🔍 **Visualisation SDD** 
 
 ### Métriques Avancées
-- 🎯 **Difficulté FSRS intégrée** : Utilise le système de difficulté FSRS natif d'Anki 23.10+
+- 🎯 **Difficulté**
 - 📊 **Statistiques de maîtrise** : Cartes matures vs. total
 - 📉 **Ratio Appris/Désuspendu** : Suivi de progression réelle
 - 🏷️ **Filtrage par rang** : Rang A uniquement, Rang B/C, ou tous
 - 📁 **Export CSV** : Exportez vos statistiques pour analyse externe
 
 ### Intégration EDN
-- 🔗 **Menu partagé Anki EDN** : S'intègre au menu centralisé pour tous les addons EDN
 - ⌨️ **Raccourci clavier** : `Ctrl+U` pour accès rapide
-- 🔧 **Configuration centralisée** : Gestion via le menu "⚙️ Paramètres EDN"
+- 🔧 **Configuration centralisée** : Gestion centralisée via le menu "⚙️ Paramètres EDN"
 
 ## 🚀 Installation
 
@@ -48,12 +47,11 @@
 #### Vue Graphique
 - Cliquer sur un point pour voir les détails d'un item
 - Utiliser les boutons de tri pour organiser les données
-- Hover sur les graphiques pour infobulles détaillées
 
 #### Paramètres (⚙️)
 1. **Sélection de sujets** : Choisir les matières à afficher
 2. **Presets** : Sauvegarder/charger des configurations
-3. **Filtres avancés** : Rang, enfants, seuils personnalisés
+3. **Filtres avancés** : Rang, seuils personnalisés
 
 #### Filtrage
 - **Mode** : Items / Sujets / SDD
@@ -62,27 +60,15 @@
 
 ### Presets Standards
 
-L'addon inclut un bouton "**Sélection Standard (32)**" pour activer rapidement les 32 matières principales EDN recommandées.
+L'addon inclut un bouton "**Sélection Standard **" pour activer rapidement les matières principales EDN recommandées.
 
 ## 🛠️ Compatibilité
 
 ### Requis
 - **Anki** : Version 23.10 ou supérieure
 - **Système** : Qt6 (Windows, macOS, Linux)
-- **Deck** : Anki EDN (gratuit, disponible sur AnkiWeb)
+- [**deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/) 
 
-### Optionnel
-- **Autres addons EDN** : Compatible avec toute la suite d'addons EDN
-
-## 🎯 Suite Anki EDN
-
-Cet addon fait partie de la **suite Anki EDN**, un écosystème d'outils pour optimiser l'utilisation du deck EDN :
-
-- **EDN Progress** (cet addon) - Statistiques et progression
-- **EDN Assistant** - Fonctionnalités complémentaires
-- **EDN Smart Queue** - Algorithme de tri intelligent
-
-Tous les addons EDN partagent un menu "**Anki EDN**" dans la barre de menu et peuvent être activés/désactivés individuellement via "⚙️ Paramètres EDN".
 
 ## ❓ FAQ
 
@@ -104,13 +90,13 @@ Vérifier que :
 ## 🐛 Signaler un problème
 
 Si vous rencontrez un bug :
-1. Vérifier la console Anki (`Tools → Add-ons → [addon] → View Files`)
+1. Vérifier la console Anki
 2. Noter le message d'erreur complet
 3. Créer un issue sur GitHub ou laisser un commentaire sur AnkiWeb
 
 ## 📜 Licence
 
-Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) - Voir fichier [LICENSE](LICENSE) pour détails.
+Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
 
 Ce projet est partagé librement pour la communauté Anki EDN.
 
@@ -122,7 +108,7 @@ Ce projet est partagé librement pour la communauté Anki EDN.
 ## 🔗 Liens
 
 - **Deck Anki EDN** : [ankiweb.net/shared/info/...](https://ankiweb.net/shared/info/)
-- **Documentation complète** : [GitHub Wiki](https://github.com/...)
+- **Documentation complète** : [GitHub Wiki](https://github.com/C2SU/Anki_EDN_Stats)
 - **Support** : [AnkiWeb Comments](https://ankiweb.net/shared/info/...)
 
 ---

@@ -3,7 +3,7 @@
   "name": "EDN Stat - Statistiques Anki EDN",
   "version": "1.0.0",
   "author": "Angelo Marciszewer",
-  "homepage": "https://github.com/yourusername/anki-edn-stat",
+  "homepage": "https://github.com/C2SU/Anki_EDN_Stats",
   "description": "Visualisez votre progression de votre Deck Anki EDN (gratuit) avec des graphiques interactifs.",
   "conflicts": [],
   "min_point_version": 231000,

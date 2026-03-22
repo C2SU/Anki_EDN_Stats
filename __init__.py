@@ -325,7 +325,7 @@ def init_edn_progress():
     """Initialize EDN Progress and register with shared menu."""
     print("[EDN Stats] Starting initialization...")
     try:
-        from .edn_menu_shared import register_module, register_action, should_initialize_module
+        from .edn_menu import register_module, register_action, should_initialize_module
         print("[EDN Stats] Import successful")
         
         # Register module (always succeeds - just declares the module)

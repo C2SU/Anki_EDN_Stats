@@ -1,16 +1,12 @@
 # Guide d'Intégration au Menu Anki EDN
-
-Ce guide explique comment intégrer un **nouvel addon** au système de menu partagé Anki EDN.
-
 ---
 
 ## 📋 Vue d'ensemble
 
-Le système `edn_menu_shared/` permet à tous les addons EDN de partager un seul menu "Anki EDN" dans la barre de menu d'Anki, avec :
+Le système `edn_menu/` permet à tous les addons EDN de partager un seul menu "Anki EDN" dans la barre de menu d'Anki, avec :
 - ✅ Activation/désactivation des modules
 - ✅ Raccourcis personnalisables
 - ✅ Configuration centralisée
-- ✅ Dialog de paramètres intégré (optionnel)
 
 ---
 
@@ -18,26 +14,12 @@ Le système `edn_menu_shared/` permet à tous les addons EDN de partager un seul
 
 ### Étape 1 : Choisir votre niveau d'intégration
 
-#### **Niveau 1 : Minimal** (Menu uniquement)
-Copiez **seulement** `shared_menu.py` dans votre addon.
-
-```
-MonNouvelAddonEDN/
-├── __init__.py          
-├── edn_menu_shared/
-│   └── shared_menu.py       ← Copier depuis Anki_EDN_Stats
-└── ma_fonction.py       
-```
-
-**Résultat** : Menu fonctionne, bouton "⚙️ Paramètres" affiche un message d'info.
-
-#### **Niveau 2 : Standard** (Recommandé - avec UI)
-Copiez **tout le dossier** `edn_menu_shared/` dans votre addon.
+Copiez **tout le dossier** `edn_menu/` dans votre addon.
 
 ```
 MonNouvelAddonEDN/
 ├── __init__.py
-├── edn_menu_shared/         ← COPIER le dossier complet
+├── edn_menu/                ← COPIER le dossier complet
 │   ├── __init__.py
 │   ├── shared_menu.py
 │   ├── settings_dialog.py
@@ -58,7 +40,7 @@ Mon Nouvel Addon EDN
 Description de l'addon
 """
 from aqt import gui_hooks
-from .edn_menu_shared import register_module, register_action
+from .edn_menu import register_module, register_action
 
 def init_mon_addon():
     """Initialise l'addon et s'enregistre au menu EDN."""
@@ -132,8 +114,6 @@ Si votre addon est le premier addon EDN installé :
 - ✅ Votre addon s'enregistre
 - ✅ Les futurs addons EDN s'y ajouteront
 
-**Conclusion** : Peu importe l'ordre d'installation, ça fonctionne ! 🎉
-
 ---
 
 ## 📚 Référence API `shared_menu.py`
@@ -168,7 +148,7 @@ Ajoute une action au menu "Anki EDN".
 
 **Paramètres** :
 - `module_id` (str) : ID du module (doit avoir été enregistré)
-- `label` (str) : Texte du menu (peut inclure emoji: `"🎯 Ma Feature"`)
+- `label` (str) : Texte du menu
 - `callback` (callable) : Fonction à appeler au clic
 - `shortcut` (str, optionnel) : Raccourci clavier (ex: `"Ctrl+Shift+Q"`)
 - `icon` (str, optionnel) : Chemin icône (ou `None` si emoji dans label)
@@ -301,18 +281,3 @@ if not register_module(...):
 ### Conflit de raccourcis
 
 **Solution** : Utiliser des raccourcis uniques ou vérifier dans "⚙️ Paramètres EDN"
-
----
-
-## 📞 Support
-
-Pour questions ou problèmes d'intégration :
-- Vérifier que `shared_menu.py` est à jour
-- Consulter le code source de `Anki_EDN_Assistant` comme référence
-- Tester avec les autres addons EDN installés
-
----
-
-## 🎯 Exemple complet
-
-Voir `Anki_EDN_Assistant/__init__.py` pour un exemple de référence complet.

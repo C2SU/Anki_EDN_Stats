@@ -2,6 +2,7 @@
 from aqt import mw
 import time, os, json, math
 from statistics import median, mean
+from .logger import log, perf_log
 
 # defaults
 SUSPEND_MASK_THRESHOLD = 0.8
@@ -411,6 +412,7 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
     }
     return result
 
+@perf_log
 def collect_overview(mode='items', only_rang=None, exclude_rang=None, include_children=False, subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, window_days=30, mature_ivl=21, subject_blacklist=None, subject_filter=None, overlap_threshold=0.15):
     # Use batch SQL optimization (activated in production)
     return collect_overview_batch(
@@ -607,6 +609,7 @@ def _match_tag_hierarchy(note_tags_lower, target_tag_lower):
             return True
     return False
 
+@perf_log
 def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, include_children=False, 
                           subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, 
                           window_days=30, mature_ivl=21, subject_blacklist=None, 
