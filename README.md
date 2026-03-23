@@ -6,12 +6,15 @@
 
 **EDN Progress** est un addon conçu pour les utilisateurs du [**deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/) (gratuit et communautaire). Il offre une visualisation complète de votre progression et permet d'identfier vos difficultés.
 
+![3.png](3.png)
+
 ## ✨ Fonctionnalités
 
 ### Graphiques Interactifs
 - 📈 **Visualisation par items** 
 - 🧬 **Visualisation par matières** 
 - 🔍 **Visualisation SDD** 
+![1.png](1.png)
 
 ### Métriques Avancées
 - 🎯 **Difficulté**
@@ -19,6 +22,7 @@
 - 📉 **Ratio Appris/Désuspendu** : Suivi de progression réelle
 - 🏷️ **Filtrage par rang** : Rang A uniquement, Rang B/C, ou tous
 - 📁 **Export CSV** : Exportez vos statistiques pour analyse externe
+![2.png](2.png)
 
 ### Intégration EDN
 - ⌨️ **Raccourci clavier** : `Ctrl+U` pour accès rapide
@@ -60,7 +64,7 @@
 
 ### Presets Standards
 
-L'addon inclut un bouton "**Sélection Standard **" pour activer rapidement les matières principales EDN recommandées.
+L'addon inclut un bouton **"Sélection Standard"** pour activer rapidement les matières principales EDN recommandées.
 
 ## 🛠️ Compatibilité
 
@@ -71,7 +75,8 @@ L'addon inclut un bouton "**Sélection Standard **" pour activer rapidement les 
 
 
 ## ❓ FAQ
-
+### Pourquoi "Nombre de notes" est supérieur aux nombres de cartes ?
+Les cartes peuvent avoir plusieurs notes (ex. les cartes syndromes ont 3 notes chacune).
 ### Pourquoi mes presets ne s'affichent pas ?
 Les presets sont sauvegardés dans `user_state.json`. Si le problème persiste, vérifier la console Anki pour les messages `[EDN LOAD_STATE]`.
 
@@ -106,9 +111,9 @@ Ce projet est partagé librement pour la communauté Anki EDN.
 - **Chart.js** : Pour la bibliothèque de graphiques
 
 ## 🔗 Liens
-
-- **Deck Anki EDN** : [ankiweb.net/shared/info/...](https://ankiweb.net/shared/info/)
-- **Documentation complète** : [GitHub Wiki](https://github.com/C2SU/Anki_EDN_Stats)
-- **Support** : [AnkiWeb Comments](https://ankiweb.net/shared/info/...)
+- [**Deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/)
+- [**Discord**](https://discord.gg/2A7zHAEBYt)
+- [**GitHub**](https://github.com/C2SU/Anki_EDN_Stats)
+- [**AnkiWeb**](https://ankiweb.net/shared/info/...)
 
 ---
