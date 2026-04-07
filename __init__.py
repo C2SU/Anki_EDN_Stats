@@ -8,7 +8,7 @@ from aqt.utils import showInfo, tooltip
 
 from . import stats_backend
 
-ADDON_PATH = os.path.dirname(__file__)
+ADDON_PATH = os.path.dirname(os.path.abspath(__file__))
 INDEX_HTML = os.path.join(ADDON_PATH, "web", "index.html")
 
 # Register web exports to allow serving files from the addon folder

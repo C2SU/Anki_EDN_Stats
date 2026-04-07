@@ -2,8 +2,11 @@ import os
 import zipfile
 
 # Configuration
-SOURCE_DIR = r"C:\Users\Pipou\AppData\Roaming\Anki2\addons21\Anki_EDN_Stats"
-DEST_PATH = os.path.join(os.environ["USERPROFILE"], "OneDrive - Education", "Bureau", "edn_stat_v1.0.0.ankiaddon")
+# Use the directory containing this script as source
+SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Save to the root of the addon or a subfolder
+DEST_PATH = os.path.join(SOURCE_DIR, "Anki_EDN_Stats.ankiaddon")
+
 EXCLUDES = [
     "__pycache__",
     "user_state.json",
@@ -12,7 +15,8 @@ EXCLUDES = [
     "manual_",
     "INSTRUCTIONS_DEBUG",
     ".git",
-    ".vscode"
+    ".vscode",
+    ".ankiaddon"  # CRITICAL: Prevent recursive zipping
 ]
 
 def should_exclude(rel_path):

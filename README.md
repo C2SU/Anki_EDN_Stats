@@ -33,7 +33,7 @@
 ### Depuis AnkiWeb (Recommandé)
 1. Ouvrir Anki
 2. Tools → Add-ons → Get Add-ons...
-3. Entrer le code : `[CODE_ANKIWEB]`
+3. Entrer le code : `[1674438508]`
 
 ### Installation Manuelle
 1. Télécharger la dernière release
@@ -62,16 +62,12 @@
 - **Rang** : Tous / Rang A uniquement / Sans rang A
 - **Inclure enfants** : Afficher ou masquer les sous-items
 
-### Presets Standards
-
-L'addon inclut un bouton **"Sélection Standard"** pour activer rapidement les matières principales EDN recommandées.
-
 ## 🛠️ Compatibilité
 
 ### Requis
 - **Anki** : Version 23.10 ou supérieure
 - **Système** : Qt6 (Windows, macOS, Linux)
-- [**deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/) 
+- [**Deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/) 
 
 
 ## ❓ FAQ
@@ -105,15 +101,8 @@ Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
 
 Ce projet est partagé librement pour la communauté Anki EDN.
 
-## 🙏 Remerciements
-
-- **Communauté Anki EDN** 
-- **Chart.js** : Pour la bibliothèque de graphiques
-
 ## 🔗 Liens
 - [**Deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/)
 - [**Discord**](https://discord.gg/2A7zHAEBYt)
 - [**GitHub**](https://github.com/C2SU/Anki_EDN_Stats)
 - [**AnkiWeb**](https://ankiweb.net/shared/info/...)
-
----

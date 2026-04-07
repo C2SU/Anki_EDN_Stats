@@ -22,6 +22,9 @@ def _get_config_path():
     """Get config path (lazy initialization to avoid profile loading issues)."""
     global _config_path
     if _config_path is None:
+        # Prevent crash if profile is not yet loaded (e.g. during addon scan)
+        if not mw.pm or not mw.pm.name:
+            return None
         # CRITICAL: Use profile folder for shared config across all EDN addons
         _config_path = os.path.join(mw.pm.profileFolder(), "edn_shared_config.json")
     return _config_path
@@ -32,6 +35,10 @@ def get_edn_menu():
     
     # Check if menu already exists (created by another addon instance)
     if _edn_menu is None:
+        # Prevent crash if UI is not yet fully initialized
+        if not hasattr(mw, "form") or not mw.form or not hasattr(mw.form, "menubar") or not mw.form.menubar:
+            return None
+            
         # Search for existing menu by object name in menubar
         for action in mw.form.menubar.actions():
             menu = action.menu()
@@ -96,7 +103,7 @@ def register_action(module_id: str, label: str, callback: Callable,
     if shortcut:
         try:
             # Get custom shortcut from config or use default
-            custom_shortcut = get_shortcut(module_id, shortcut)
+            custom_shortcut = get_shortcut(f"{module_id}_{label}", shortcut)
             action.setShortcut(QKeySequence(custom_shortcut))
             # CRITICAL: Set shortcut context to ApplicationShortcut so it works globally
             action.setShortcutContext(Qt.ShortcutContext.ApplicationShortcut)
@@ -125,7 +132,7 @@ def register_action(module_id: str, label: str, callback: Callable,
 def get_config() -> dict:
     """Load EDN configuration."""
     config_path = _get_config_path()
-    if os.path.exists(config_path):
+    if config_path and os.path.exists(config_path):
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
@@ -136,6 +143,8 @@ def get_config() -> dict:
 def save_config(config: dict):
     """Save EDN configuration."""
     config_path = _get_config_path()
+    if not config_path:
+        return
     with open(config_path, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
 
