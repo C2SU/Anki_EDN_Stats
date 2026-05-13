@@ -624,6 +624,7 @@
                 maxRotation: 90, 
                 minRotation: 45, 
                 color: textColor,
+                display: items.length <= 11,
                 callback: function(value, index, values) {
                   let label = this.getLabelForValue(value);
                   if (label && label.length > 35) {
@@ -945,8 +946,8 @@
   </div>
 
   <!-- Pie Chart Section -->
-  <div style="background:#333; color:#fff; padding:20px; border-radius:8px;">
-    <h3 style="margin-top:0; color:#fff;">Nombre de notes</h3>
+  <div class="pie-section">
+    <h3 style="margin-top:0;" class="pie-heading">Nombre de notes</h3>
 
     <div style="margin-bottom:12px;">
       <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">

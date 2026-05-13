@@ -526,7 +526,7 @@ def export_csv(path=None):
     with open(path, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f, delimiter=';')
         w.writerow([
-            "Tag", "Nom", "Total Cartes", 
+            "Tag", "Nom", "Total Notes", 
             "Part Désuspendue", "Ratio Appris/Désuspendu (%)", 
             "Maîtrise (%)", "Difficulté FSRS (0-1)",
             "Inédites", "Apprentissage", "Réapprentissage", "Récentes", "Matures", "Suspendues", "Enfouies"
@@ -671,6 +671,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
             'tag': tag,
             'counts': {'new':0,'learning':0,'relearning':0,'recent':0,'mature':0,'suspended':0,'buried':0,'other':0},
             'nids': set(),  # Track unique notes
+            'nid_card_states': {},  # {nid: [(base_type, suspension), ...]}
             'subject_overlap_nids': set()
         }
     
@@ -722,18 +723,31 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
                 if matches_subject:
                     break
         
-        # Classify this card
-        card_class = _classify_card_raw(typ, queue, ivl, mature_ivl)
+        # Classify this card (raw type + suspension info)
+        # Determine base type (ignoring suspension)
+        in_learning_queue = queue in (1, 3)
+        if typ == 0:
+            base_type = 'new'
+        elif in_learning_queue:
+            base_type = 'relearning' if typ == 2 else 'learning'
+        elif typ == 2:
+            base_type = 'mature' if ivl >= mature_ivl else 'recent'
+        elif typ == 3:
+            base_type = 'relearning'
+        elif typ == 1:
+            base_type = 'learning'
+        else:
+            base_type = 'other'
+        
+        # Determine suspension status
+        if queue == -1:
+            suspension = 'suspended'
+        elif queue == -2:
+            suspension = 'buried'
+        else:
+            suspension = 'active'
         
         # ========== OPTIMIZED TAG MATCHING ==========
-        # For each note tag, check if it matches any target tag
-        # A target tag T matches a note tag N if:
-        #   - N == T (exact match)
-        #   - N.startswith(T + "::") (N is child of T)
-        # 
-        # Optimization: instead of checking all 953 targets,
-        # we check the note tag AND all its parent prefixes against target_set
-        
         matched_targets = set()
         for nt in note_tags_lower:
             # Check exact match
@@ -741,24 +755,61 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
                 matched_targets.add(nt)
             
             # Check if this note tag is a CHILD of any target tag
-            # "edn::item-027::sub" is child of "edn::item-027" which is child of "edn"
             parts = nt.split("::")
             for i in range(1, len(parts)):
                 parent = "::".join(parts[:i])
                 if parent in target_set:
                     matched_targets.add(parent)
         
-        # Update stats for all matched targets
+        # Accumulate card states per nid for each matched target
         for target_l in matched_targets:
             stat = stats_by_tag[target_l]
-            if nid not in stat['nids']:
-                stat['nids'].add(nid)
-                stat['counts'][card_class] += 1
-                if matches_subject:
-                    stat['subject_overlap_nids'].add(nid)
+            stat['nids'].add(nid)
+            if nid not in stat['nid_card_states']:
+                stat['nid_card_states'][nid] = []
+            stat['nid_card_states'][nid].append((base_type, suspension))
+            if matches_subject:
+                stat['subject_overlap_nids'].add(nid)
     
     process_time = time.time() - process_start
     
+    
+    # ========== CLASSIFY NOTES (priority-based) ==========
+    # Apply same note-level classification as collect_stats_for_tag
+    classify_start = time.time()
+    for tag_l, stat in stats_by_tag.items():
+        # Reset counts - we'll recompute from accumulated card states
+        stat['counts'] = {'new':0,'learning':0,'relearning':0,'recent':0,'mature':0,'suspended':0,'buried':0,'other':0}
+        
+        for nid, card_states in stat['nid_card_states'].items():
+            active_states = [(bt, s) for bt, s in card_states if s == 'active']
+            all_suspended = all(s == 'suspended' for _, s in card_states)
+            all_buried = all(s == 'buried' for _, s in card_states)
+            all_suspended_or_buried = all(s in ('suspended', 'buried') for _, s in card_states)
+            
+            if all_suspended:
+                stat['counts']['suspended'] += 1
+            elif all_buried:
+                stat['counts']['buried'] += 1
+            elif all_suspended_or_buried:
+                stat['counts']['suspended'] += 1
+            else:
+                # Has active cards - use priority system
+                active_types = [bt for bt, _ in active_states]
+                if 'new' in active_types:
+                    stat['counts']['new'] += 1
+                elif 'learning' in active_types:
+                    stat['counts']['learning'] += 1
+                elif 'relearning' in active_types:
+                    stat['counts']['relearning'] += 1
+                elif 'recent' in active_types:
+                    stat['counts']['recent'] += 1
+                elif 'mature' in active_types:
+                    stat['counts']['mature'] += 1
+                else:
+                    stat['counts']['other'] += 1
+    
+    classify_time = time.time() - classify_start
     
     # ========== BUILD RESULTS ==========
     build_start = time.time()
