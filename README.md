@@ -1,44 +1,50 @@
 # EDN Progress - Statistiques pour Anki EDN
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Anki](https://img.shields.io/badge/Anki-23.10%2B-green) ![License](https://img.shields.io/badge/license-CC%20BY--SA%204.0-orange)
+![Version](https://img.shields.io/badge/version-1.1.0-blue) ![Anki](https://img.shields.io/badge/Anki-23.10%2B-green) ![License](https://img.shields.io/badge/license-CC%20BY--SA%204.0-orange)
 
 ## 📊 Vue d'ensemble
 
-**EDN Progress** est un addon conçu pour les utilisateurs du [**deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/) (gratuit et communautaire). Il offre une visualisation complète de votre progression et permet d'identfier vos difficultés.
+**EDN Progress** est un module complémentaire conçu pour les utilisateurs du [**deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/) (gratuit et communautaire). Il offre une visualisation complète et dynamique de votre progression, de vos révisions passées et de vos charges de travail futures.
 
 ![3.png](3.png)
 
 ## ✨ Fonctionnalités
 
-### Graphiques Interactifs
-- 📈 **Visualisation par items** 
-- 🧬 **Visualisation par matières** 
-- 🔍 **Visualisation SDD** 
+### 📈 Graphiques Interactifs de Progression
+- **Visualisation par items** : Suivez précisément votre avancement item par item.
+- **Visualisation par matières** : Synthétisez votre progression par grande matière médicale.
+- **Visualisation SDD** : Affichez votre avancement selon la classification des structures de soins.
 ![1.png](1.png)
 
-### Métriques Avancées
-- 🎯 **Difficulté**
-- 📊 **Statistiques de maîtrise** : Cartes matures vs. total
-- 📉 **Ratio Appris/Désuspendu** : Suivi de progression réelle
-- 🏷️ **Filtrage par rang** : Rang A uniquement, Rang B/C, ou tous
-- 📁 **Export CSV** : Exportez vos statistiques pour analyse externe
+### ⏱️ Historique & Prévisions (Nouvel Onglet)
+Accédez à un tout nouvel onglet d'analyse temporelle pour mieux piloter vos révisions :
+- 📊 **Fiabilité de rétention** : Suivi au jour le jour du taux de réussite sur vos cartes à réviser.
+- 📉 **Volume & Backlog** : Visualisation combinée du nombre de révisions effectuées, du temps d'étude quotidien (en minutes) et de l'évolution du retard accumulé (Backlog).
+- 🔮 **Prévisions FSRS** : Comparaison entre les révisions planifiées par Anki et une simulation prédictive de propagation FSRS (prenant en compte votre charge théorique future).
+
+### 🔍 Métriques & Filtres Avancés
+- 🎯 **Difficulté & Maîtrise** : Calcul des ratios cartes matures / total, et ratio cartes apprises / déstages.
+- 🏷️ **Filtres de rang** : Ciblez uniquement le Rang A, les Rangs B/C, ou toutes les cartes.
+- 👶 **Filtre Pédiatrie** : Option pour exclure ou inclure les cartes pédiatriques de vos statistiques globales.
+- 📁 **Export CSV** : Exportez facilement vos données de progression pour vos analyses externes.
 ![2.png](2.png)
 
-### Intégration EDN
-- ⌨️ **Raccourci clavier** : `Ctrl+U` pour accès rapide
-- 🔧 **Configuration centralisée** : Gestion centralisée via le menu "⚙️ Paramètres EDN"
+### 🃏 Réglages Visuels des Cartes (EDN)
+Centralisé via le menu `Réglages Cartes EDN` :
+- Modifie l'affichage de vos cartes pour y ajouter la coloration selon le rang (A, B, C), les pictogrammes de matières médicales (ordinateurs et mobiles), et des bordures dynamiques basées sur vos drapeaux Anki.
 
 ## 🚀 Installation
 
 ### Depuis AnkiWeb (Recommandé)
-1. Ouvrir Anki
-2. Tools → Add-ons → Get Add-ons...
-3. Entrer le code : `[1674438508]`
+1. Ouvrir Anki.
+2. Allez dans `Outils > Modules complémentaires > Acquérir des modules complémentaires...`
+3. Entrez le code : `1674438508`
+4. Redémarrez Anki.
 
 ### Installation Manuelle
-1. Télécharger la dernière release
-2. Dézipper dans `[Anki Profile]/addons21/`
-3. Redémarrer Anki
+1. Télécharger le fichier `.ankiaddon` depuis les releases.
+2. Allez dans `Outils > Modules complémentaires > Installer depuis un fichier...`
+3. Sélectionnez le fichier téléchargé et redémarrez Anki.
 
 ## 📖 Utilisation
 
@@ -48,61 +54,29 @@
 
 ### Interface Principale
 
-#### Vue Graphique
-- Cliquer sur un point pour voir les détails d'un item
-- Utiliser les boutons de tri pour organiser les données
+#### Vue Globale
+- Utilisez la barre supérieure pour filtrer par Rang, type de vue (Items / Sujets / SDD), et trier les données.
+- Cliquez sur un élément pour zoomer ou voir le détail de ses sous-catégories.
 
-#### Paramètres (⚙️)
-1. **Sélection de sujets** : Choisir les matières à afficher
-2. **Presets** : Sauvegarder/charger des configurations
-3. **Filtres avancés** : Rang, seuils personnalisés
-
-#### Filtrage
-- **Mode** : Items / Sujets / SDD
-- **Rang** : Tous / Rang A uniquement / Sans rang A
-- **Inclure enfants** : Afficher ou masquer les sous-items
+#### Historique & Prévisions (Nouvel onglet)
+- Basculez sur l'onglet **Historique & Prévisions** en haut à gauche.
+- Ajustez la fenêtre d'historique (30, 90, 180 jours) et la fenêtre de prévision (30, 90 jours) pour actualiser instantanément vos graphiques interactifs.
 
 ## 🛠️ Compatibilité
 
-### Requis
-- **Anki** : Version 23.10 ou supérieure
-- **Système** : Qt6 (Windows, macOS, Linux)
-- [**Deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/) 
-
+- **Anki** : Version 23.10 ou supérieure recommandée (Requis pour l'intégration FSRS).
+- **Système** : Qt6 (Windows, macOS, Linux).
+- **Deck Requis** : Conçu spécifiquement pour le [**Deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/).
 
 ## ❓ FAQ
-### Pourquoi "Nombre de notes" est supérieur aux nombres de cartes ?
-Les cartes peuvent avoir plusieurs notes (ex. les cartes syndromes ont 3 notes chacune).
-### Pourquoi mes presets ne s'affichent pas ?
-Les presets sont sauvegardés dans `user_state.json`. Si le problème persiste, vérifier la console Anki pour les messages `[EDN LOAD_STATE]`.
+### Puis-je l'utiliser sans le deck EDN ?
+L'addon cherche des structures spécifiques de tags (`EDN::item-XXX`). Il fonctionnera techniquement avec d'autres decks mais l'utilité sera grandement limitée.
 
-### Puis-je utiliser cet addon sans le deck EDN ?
-L'addon est optimisé pour le deck EDN (tags `EDN::item-XXX`, etc.). Il fonctionnera avec d'autres decks mais les fonctionnalités seront limitées.
-
-### Comment exporter mes statistiques ?
-Utiliser le bouton "📁 Export CSV" en bas de l'interface. Le fichier CSV peut être ouvert dans Excel/Google Sheets.
-
-### Mon graphique est vide ?
-Vérifier que :
-- Vous avez des cartes Anki EDN dans votre collection
-- Les filtres ne sont pas trop restrictifs
-- Le seuil de suspension n'est pas trop élevé
-
-## 🐛 Signaler un problème
-
-Si vous rencontrez un bug :
-1. Vérifier la console Anki
-2. Noter le message d'erreur complet
-3. Créer un issue sur GitHub ou laisser un commentaire sur AnkiWeb
-
-## 📜 Licence
-
-Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
-
-Ce projet est partagé librement pour la communauté Anki EDN.
+### Pourquoi mes graphiques d'historique ne s'affichent pas ?
+Assurez-vous d'avoir coché les paramètres d'historique adéquats et d'avoir effectué des révisions sur le deck EDN durant la période sélectionnée.
 
 ## 🔗 Liens
 - [**Deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/)
 - [**Discord**](https://discord.gg/2A7zHAEBYt)
-- [**GitHub**](https://github.com/C2SU/Anki_EDN_Stats)
-- [**AnkiWeb**](https://ankiweb.net/shared/info/...)
+- [**GitHub Repository**](https://github.com/C2SU/Anki_EDN_Stats)
+- [**AnkiWeb Page**](https://ankiweb.net/shared/info/1674438508)
