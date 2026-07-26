@@ -141,21 +141,42 @@
       }
 
       .dropdown-trigger {
-        background: #f0f0f0;
+        background: #fff;
         border: 1px solid #ccc;
-        padding: 4px 10px;
-        border-radius: 4px;
+        padding: 0 10px;
+        border-radius: 6px;
         cursor: pointer;
-        min-width: 120px;
+        min-width: 130px;
         font-size: 13px;
         text-align: left;
         color: #333;
+        height: 32px;
+        box-sizing: border-box;
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.2s ease;
       }
 
       body.nightMode .dropdown-trigger {
         background: #2a2a2a;
         color: #ddd;
         border-color: #555;
+      }
+
+      .dropdown-trigger:hover {
+        border-color: #2c7bb6;
+      }
+
+      .dropdown-trigger::after {
+        content: '▼';
+        font-size: 9px;
+        margin-left: 8px;
+        color: #666;
+      }
+      
+      body.nightMode .dropdown-trigger::after {
+        color: #aaa;
       }
 
       .uniquement-btn, .uniquement-btn-dropdown {
@@ -211,67 +232,216 @@
         margin-right: 8px;
       }
 
-      .dropdown-trigger::after {
-        content: ' ▼';
-        float: right;
-        font-size: 10px;
-        margin-top: 4px;
+      /* Premium Top Controls styling */
+      .top-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.04);
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        margin-top: 10px;
       }
 
-      /* Dark mode: CSV button and settings button */
+      body.nightMode .top-controls {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .control-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+
+      .control-group label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        color: inherit;
+        user-select: none;
+      }
+
+      .control-group select {
+        height: 32px;
+        padding: 0 8px;
+        font-size: 13px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        color: #333;
+        outline: none;
+        box-sizing: border-box;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      body.nightMode .control-group select {
+        background-color: #2a2a2a;
+        color: #ddd;
+        border-color: #555;
+      }
+
+      .control-group select:hover {
+        border-color: #2c7bb6;
+      }
+
+      .control-group select:focus {
+        border-color: #2c7bb6;
+        box-shadow: 0 0 0 2px rgba(44, 123, 182, 0.2);
+      }
+
+      .control-divider {
+        border-left: 1px solid rgba(0, 0, 0, 0.15);
+        height: 20px;
+        margin: 0 4px;
+      }
+
+      body.nightMode .control-divider {
+        border-left-color: rgba(255, 255, 255, 0.15);
+      }
+
+      .actions-group {
+        margin-left: auto;
+      }
+
+      /* Action Buttons */
+      .top-controls button {
+        height: 32px;
+        padding: 0 14px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+      }
+
+      #applyBtn {
+        background-color: #2c7bb6;
+        color: #fff;
+        border: none;
+      }
+
+      #applyBtn:hover {
+        filter: brightness(1.1);
+      }
+
+      #exportCsv {
+        background-color: #e8f0fe;
+        color: #1a56db;
+        border: 1px solid #c3d5f7;
+      }
+
+      #exportCsv:hover {
+        background-color: #dbeafe;
+      }
+
       body.nightMode #exportCsv {
         background: #1e3a5f !important;
         color: #90caf9 !important;
         border-color: #2c5282 !important;
       }
+
+      body.nightMode #exportCsv:hover {
+        background: #1e40af !important;
+      }
+
+      #settingsBtn {
+        width: 32px;
+        padding: 0;
+        background: none;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        color: #555;
+      }
+
+      #settingsBtn:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
       body.nightMode #settingsBtn {
-        border-color: rgba(255,255,255,0.2) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
         color: #ccc !important;
       }
-      body.nightMode .top-controls {
-        border-color: rgba(255,255,255,0.08) !important;
+
+      body.nightMode #settingsBtn:hover {
+        background: rgba(255, 255, 255, 0.05);
       }
     </style>
-    <!-- Tabs removed as requested -->
+    <div class="tabs" style="margin: 10px 0 12px 0;">
+      <button class="tab active" id="tabOverview">📊 Vue d'ensemble</button>
+      <button class="tab" id="tabHistory">📈 Historique & Prévisions</button>
+    </div>
     <div class="top-controls">
-      <label>Afficher : <select id="scopeSelect">
-          <option value="items">Items</option>
-          <option value="sdd">SDD</option>
-          <option value="subject">Matières</option>
-        </select></label>
-      <label>Rang : <select id="rangMode">
-          <option value="all">Tous</option>
-          <option value="onlyA">Rang A</option>
-          <option value="notA">Hors A</option>
-        </select></label>
-      <label><input id="includeChildren" type="checkbox"> Inclure enfants</label>
-      <div id="filterBySubjectContainer" style="display: inline-block; margin-left: 8px;">
-        <label><input id="filterBySubject" type="checkbox"> Par matières</label>
+      <!-- Group 1: Scope & Rang -->
+      <div class="control-group">
+        <label>Afficher : 
+          <select id="scopeSelect">
+            <option value="items">Items</option>
+            <option value="sdd">SDD</option>
+            <option value="subject">Matières</option>
+          </select>
+        </label>
+        <label>Rang : 
+          <select id="rangMode">
+            <option value="all">Tous</option>
+            <option value="onlyA">Rang A</option>
+            <option value="notA">Hors A</option>
+          </select>
+        </label>
       </div>
-      <div id="subjectFilterLabel" style="margin-left:8px; display:none;">
-        <div class="custom-dropdown" id="subjectDropdown">
-          <div class="dropdown-trigger" id="subjectTrigger">Matières (Tout)</div>
-          <div class="dropdown-content" id="subjectList">
-            <!-- Populated dynamically -->
+
+      <!-- Group 2: Inclusion Checkboxes -->
+      <div class="control-group">
+        <label><input id="includeChildren" type="checkbox"> Inclure enfants</label>
+        <label><input id="excludePediatric" type="checkbox"> Exclure Pédiatrie</label>
+      </div>
+
+      <!-- Group 3: Subjects Filter (Grouped with dropdown to wrap together) -->
+      <div class="control-group" id="subjectFilterGroup">
+        <span id="filterBySubjectContainer">
+          <label><input id="filterBySubject" type="checkbox"> Par matières</label>
+        </span>
+        <div id="subjectFilterLabel" style="display:none; margin-left: 4px;">
+          <div class="custom-dropdown" id="subjectDropdown">
+            <div class="dropdown-trigger" id="subjectTrigger">Matières (Tout)</div>
+            <div class="dropdown-content" id="subjectList">
+              <!-- Populated dynamically -->
+            </div>
           </div>
         </div>
       </div>
-      <div style="border-left:1px solid rgba(0,0,0,0.15); height:20px; margin:0 4px;"></div>
-      <label>Graphique :
-        <select id="chartMetric">
-          <option value="mastery">Maîtrise</option>
-          <option value="difficulty">Difficulté</option>
-          <option value="studied_ratio">Ratio Appris/Désuspendu</option>
-          <option value="studied_total_ratio">Ratio Appris/Total</option>
-          <option value="unsuspended_share">Part Désuspendue</option>
-        </select>
-        <span class="help-icon" id="helpIcon"
-          style="cursor:pointer; font-size:16px; margin-left:6px; display:none;">ⓘ</span>
-      </label>
-      <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+
+      <div class="control-divider"></div>
+
+      <!-- Group 4: Chart Metric -->
+      <div class="control-group">
+        <label>Graphique :
+          <select id="chartMetric">
+            <option value="mastery">Maîtrise</option>
+            <option value="difficulty">Difficulté</option>
+            <option value="studied_ratio">Ratio Appris/Désuspendu</option>
+            <option value="studied_total_ratio">Ratio Appris/Total</option>
+            <option value="unsuspended_share">Part Désuspendue</option>
+          </select>
+        </label>
+        <span class="help-icon" id="helpIcon" style="cursor:pointer; font-size:16px; margin-left:6px; display:none;">ⓘ</span>
+      </div>
+
+      <!-- Group 5: Actions -->
+      <div class="control-group actions-group">
         <button id="applyBtn">Appliquer</button>
-        <button id="exportCsv" style="background:#e8f0fe; color:#1a56db; border:1px solid #c3d5f7;">CSV</button>
-        <button id="settingsBtn" style="background:none; border:1px solid rgba(0,0,0,0.15); cursor:pointer; color:#555; padding:6px 10px;" title="Paramètres">⚙️</button>
+        <button id="exportCsv">CSV</button>
+        <button id="settingsBtn" title="Paramètres">⚙️</button>
       </div>
     </div>
   </header>
@@ -414,7 +584,7 @@
 
   <main>
 
-    <section id="overview" class="active">
+    <section id="overview" class="tab-content active">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h2>Analyse Graphique</h2>
         <div id="metaBox" class="meta" style="margin:0; padding:4px 12px; font-size:12px;"></div>
@@ -457,6 +627,69 @@
       <div id="sortControlsContainer" class="sort-controls" style="margin-bottom:15px;"></div>
       <section id="pages"></section>
       <div id="loadMoreTrigger" style="text-align:center; padding:20px; color:#666; font-style:italic;"></div>
+    </section>
+
+    <!-- New History & Forecast section -->
+    <section id="historyForecastSection" class="tab-content" style="display:none; margin-top: 20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+        <h2 style="margin:0;">Historique & Prévisions</h2>
+        <div style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+          <label style="font-weight:600;">Historique : 
+            <select id="histWindowSelect" style="padding:4px 8px; border-radius:4px; margin-left:5px;">
+              <option value="30">30 jours</option>
+              <option value="90" selected>90 jours</option>
+              <option value="180">180 jours</option>
+              <option value="365">1 an</option>
+            </select>
+          </label>
+          <label style="font-weight:600;">Prévisions : 
+            <select id="forecastWindowSelect" style="padding:4px 8px; border-radius:4px; margin-left:5px;">
+              <option value="7">7 jours</option>
+              <option value="14">14 jours</option>
+              <option value="30" selected>30 jours</option>
+              <option value="90">90 jours</option>
+              <option value="180">180 jours</option>
+              <option value="365">1 an</option>
+            </select>
+          </label>
+          <button id="refreshHistBtn" style="padding:6px 12px; font-size:13px; background:#2c7bb6; color:white; border:none; border-radius:4px; cursor:pointer;">Rafraîchir</button>
+        </div>
+      </div>
+
+      <div class="history-grid">
+        <!-- Chart 1: Evolution of Card States & Real Retention -->
+        <div class="history-card">
+          <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <span>📈 Évolution des États & Rétention</span>
+            <small style="font-weight:normal; font-size:12px; color:#666;" id="retentionStatsLabel"></small>
+          </h3>
+          <div style="position:relative; height:350px; width:100%;">
+            <canvas id="histStatesChart" style="padding:0; border:none; margin:0; width:100%; height:100%;"></canvas>
+          </div>
+        </div>
+        
+        <!-- Chart 2: Backlog & Reviews Volume -->
+        <div class="history-card">
+          <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <span>📊 Retard (Backlog) & Volume de Révisions</span>
+            <small style="font-weight:normal; font-size:12px; color:#666;" id="backlogStatsLabel"></small>
+          </h3>
+          <div style="position:relative; height:350px; width:100%;">
+            <canvas id="histBacklogChart" style="padding:0; border:none; margin:0; width:100%; height:100%;"></canvas>
+          </div>
+        </div>
+        
+        <!-- Chart 3: FSRS Future Forecast Simulator -->
+        <div class="history-card">
+          <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <span>🎯 Prévisions FSRS (Workload estimé)</span>
+            <small style="font-weight:normal; font-size:12px; color:#666;" id="forecastStatsLabel"></small>
+          </h3>
+          <div style="position:relative; height:350px; width:100%;">
+            <canvas id="forecastChart" style="padding:0; border:none; margin:0; width:100%; height:100%;"></canvas>
+          </div>
+        </div>
+      </div>
     </section>
 
     <div style="display:none;">
@@ -520,7 +753,7 @@
       "Anatomie", "Anatomo-pathologie", "Antibiothérapie", "Cardiologie",
       "Dermatologie", "Douleur", "Endocrinologie", "Gastro-entérologie",
       "Gynécologie", "Gériatrie", "Hématologie", "Imagerie",
-      "Immunologie", "Infectiologie", "LCA", "Locomoteur", "MPR", "Neurologie",
+      "Immunologie", "Infectiologie", "LCA", "EDN:LCA", "EDN::LCA", "Locomoteur", "MPR", "Neurologie",
       "Nutrition", "Néphrologie", "Oncologie", "Ophtalmologie", "ORL",
       "Pharmacologie", "Physiologie", "Pneumologie", "Psychiatrie",
       "Pédiatrie", "Santé-publique", "Urgences", "Urologie"
@@ -585,7 +818,7 @@
       const ctx = els.mainChart.getContext('2d'); // Use the new mainChart ID
 
       // Dark Mode Check
-      const isNight = document.body.classList.contains('nightMode');
+      const isNight = document.body ? document.body.classList.contains('nightMode') : false;
       const textColor = isNight ? '#e0e0e0' : '#333'; // Darker for light mode
       const gridColor = isNight ? '#444' : '#ddd';
 
@@ -674,7 +907,20 @@
       // val is 0-100
       if (metric === 'difficulty') {
         // High diff = Bad (Red)
-        return val > 50 ? '#e06666' : '#93c47d';
+        const thCrit = (parseFloat(document.getElementById('critThresholdInput')?.value) || 0.8) * 100;
+        return val > thCrit ? '#e06666' : '#93c47d';
+      }
+      if (metric === 'mastery') {
+        const thMastery = (parseFloat(document.getElementById('colorThMastery')?.value) || 0.7) * 100;
+        return val >= thMastery ? '#93c47d' : '#e06666';
+      }
+      if (metric === 'studied_ratio') {
+        const thRatio = (parseFloat(document.getElementById('colorThRatio')?.value) || 0.7) * 100;
+        return val >= thRatio ? '#93c47d' : '#e06666';
+      }
+      if (metric === 'studied_total_ratio') {
+        const thTotalRatio = (parseFloat(document.getElementById('colorThTotalRatio')?.value) || 0.6) * 100;
+        return val >= thTotalRatio ? '#93c47d' : '#e06666';
       }
       // Others: High = Good (Green)
       if (val < 40) return '#e06666';
@@ -826,19 +1072,6 @@
         // Good = Green Text, No Border.
         // Bad = Red Text, Red Border + Bg.
 
-        function getStyle(val, isBadIfHigh = false) {
-          const high = val >= 0.7;
-          const low = val < 0.3;
-          let isGood = isBadIfHigh ? low : high;
-          let isBad = isBadIfHigh ? high : low;
-          // Neutral in between
-
-          // User Request: "Les paramètres en vert ne doivent pas bénéficier d'un cadre"
-          if (isGood) return `color:#388e3c; font-weight:800;`;
-          if (isBad) return `color:#d32f2f; background:#ffebee; border:1px solid #d32f2f; padding:2px 6px; border-radius:4px; font-weight:800;`;
-          return `color:#555; font-weight:600;`; // Neutral
-        }
-
         const ratioPct = Math.min(100, Math.round((it.studied_ratio || 0) * 100));
         const masteryPct = Math.min(100, Math.round((it.mastery || 0) * 100));
         const diffPct = Math.round(diffVal * 100);
@@ -847,16 +1080,20 @@
         const unsuspPct = Math.min(100, Math.round(unsuspRaw * 100));
 
         // Thresholds from config
-        const thRatio = (parseFloat(document.getElementById('colorThRatio').value) || 0.5) * 100;
-        const thMastery = (parseFloat(document.getElementById('colorThMastery').value) || 0.5) * 100;
+        const thRatio = (parseFloat(document.getElementById('colorThRatio').value) || 0.7) * 100;
+        const thMastery = (parseFloat(document.getElementById('colorThMastery').value) || 0.7) * 100;
+        const thTotalRatio = (parseFloat(document.getElementById('colorThTotalRatio').value) || 0.6) * 100;
+        const thCrit = parseFloat(document.getElementById('critThresholdInput').value) || 0.8;
 
         // Logic: > Threshold = Good (Green, No Border). < Threshold = Bad (Red, Box).
         const styleRatio = ratioPct >= thRatio ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
         const styleMastery = masteryPct >= thMastery ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
-        const styleDiff = diffVal >= 0.7 ? 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;' : (diffVal < 0.3 ? 'color:#388e3c; font-weight:800;' : 'color:#555; font-weight:600;');
+        const styleDiff = diffVal > thCrit ? 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;' : (diffVal < 0.3 ? 'color:#388e3c; font-weight:800;' : 'color:#555; font-weight:600;');
 
         // Unsuspend: High is good?
         const styleUnsus = unsuspPct >= 40 ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
+
+        const styleTotalRatio = pct(it.studied_total_ratio) >= thTotalRatio ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
 
         html += `
          <div class="item modern-card" onclick="showDetailForTag('${it.tag}')">
@@ -892,7 +1129,7 @@
                <!-- Appris/Total -->
                <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
                  <span style="color:#666;">Appris/Total:</span>
-                 <span style="${getStyle(it.studied_total_ratio || 0, false)}">${pct(it.studied_total_ratio)}%</span>
+                 <span style="${styleTotalRatio}">${pct(it.studied_total_ratio)}%</span>
                </div>
              </div>
           </div>
@@ -1002,6 +1239,16 @@
         else if (mode === 'mature') q += ' ((is:review) (-is:learn) (prop:ivl>=21))' + excludeClause;
         else if (mode === 'suspended') q += ' (is:suspended)';
         else if (mode === 'buried') q += ' (is:buried)';
+        else if (mode === 'new_suspended') q += ' (is:suspended is:new)';
+        else if (mode === 'learning_suspended') q += ' (is:suspended (-is:review) (is:learn))';
+        else if (mode === 'relearning_suspended') q += ' (is:suspended ((is:review) (is:learn)))';
+        else if (mode === 'recent_suspended') q += ' (is:suspended ((is:review) (-is:learn) (prop:ivl<21)))';
+        else if (mode === 'mature_suspended') q += ' (is:suspended ((is:review) (-is:learn) (prop:ivl>=21)))';
+        else if (mode === 'new_buried') q += ' (is:buried is:new)';
+        else if (mode === 'learning_buried') q += ' (is:buried (-is:review) (is:learn))';
+        else if (mode === 'relearning_buried') q += ' (is:buried ((is:review) (is:learn)))';
+        else if (mode === 'recent_buried') q += ' (is:buried ((is:review) (-is:learn) (prop:ivl<21)))';
+        else if (mode === 'mature_buried') q += ' (is:buried ((is:review) (-is:learn) (prop:ivl>=21)))';
         else if (mode === 'other') q += ' (-(is:new OR is:learn OR is:review OR is:suspended OR is:buried))';
 
         // Add rang clause to the query (after card type filters but before excludeClause was added)
@@ -1088,10 +1335,11 @@
 
         let pieTotal = data.reduce((acc, d) => acc + d.val, 0);
 
-        const legendHTML = data.map(d => {
+        let legendHTML = '';
+        data.forEach(d => {
           const p = pieTotal > 0 ? ((d.val / pieTotal) * 100).toFixed(2) + '%' : '0%';
-          return `
-    <div style="display:flex; justify-content:space-between; margin-bottom:4px; align-items:center; cursor:pointer;"
+          legendHTML += `
+    <div class="legend-row" style="display:flex; justify-content:space-between; margin-bottom:4px; align-items:center; cursor:pointer;"
       onclick="openSlice('${d.key}')" title="Ouvrir '${d.label}' dans le navigateur">
       <div style="display:flex; align-items:center; gap:8px;">
         <span style="width:12px; height:12px; background:${d.color}; display:inline-block;"></span>
@@ -1103,7 +1351,37 @@
       </div>
     </div>
     `;
-        }).join('');
+
+          if (separate && (d.key === 'suspended' || d.key === 'buried')) {
+            const subPrefix = d.key; // 'suspended' or 'buried'
+            const subStates = [
+              { label: 'Inédites', val: counts[`new_${subPrefix}`] || 0, color: colors.new, key: `new_${subPrefix}` },
+              { label: 'À repasser', val: counts[`learning_${subPrefix}`] || 0, color: colors.learning, key: `learning_${subPrefix}` },
+              { label: 'Réapprentissage', val: counts[`relearning_${subPrefix}`] || 0, color: colors.relearning, key: `relearning_${subPrefix}` },
+              { label: 'Récentes', val: counts[`recent_${subPrefix}`] || 0, color: colors.recent, key: `recent_${subPrefix}` },
+              { label: 'Matures', val: counts[`mature_${subPrefix}`] || 0, color: colors.mature, key: `mature_${subPrefix}` }
+            ];
+
+            subStates.forEach(sub => {
+              if (sub.val > 0) {
+                const subP = pieTotal > 0 ? ((sub.val / pieTotal) * 100).toFixed(2) + '%' : '0%';
+                legendHTML += `
+    <div class="legend-row sub-legend" style="display:flex; justify-content:space-between; margin-bottom:4px; padding-left:20px; align-items:center; cursor:pointer; font-size:12px; opacity:0.85;"
+      onclick="openSlice('${sub.key}')" title="Ouvrir '${d.label} - ${sub.label}' dans le navigateur">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:8px; height:8px; background:${sub.color}; display:inline-block; border-radius:50%;"></span>
+        <span style="text-decoration:underline; font-style:italic;">${sub.label}</span>
+      </div>
+      <div style="display:flex; gap:20px;">
+        <span>${sub.val}</span>
+        <span style="width:50px; text-align:right;">${subP}</span>
+      </div>
+    </div>
+    `;
+              }
+            });
+          }
+        });
 
         document.getElementById('pieLegend').innerHTML = legendHTML;
 
@@ -1174,16 +1452,7 @@
       });
     }
 
-    // Subject management event listeners
-    document.getElementById('selectAllSubjects')?.addEventListener('click', () => {
-      document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => cb.checked = true);
-      saveState();
-    });
-
-    document.getElementById('selectNoneSubjects')?.addEventListener('click', () => {
-      document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => cb.checked = false);
-      saveState();
-    });
+    // Duplicate listeners removed - handled below in settings logic section
 
     document.getElementById('showSubjectChildren')?.addEventListener('change', (e) => {
       // Re-populate to show/hide children
@@ -1229,6 +1498,7 @@
 
     els.rangMode.addEventListener('change', () => saveState());
     els.includeChildren.addEventListener('change', () => saveState());
+    document.getElementById('excludePediatric')?.addEventListener('change', () => triggerRecompute(false));
 
     // REMOVED: Auto-refresh on subject change - causes lag
     // User must click "Appliquer" to update
@@ -1418,8 +1688,18 @@
           sortField: STATE.sortField,
           sortDir: STATE.sortDir,
           enabledSubjects: enabledSubjects,
+          selectedSubjects: getSelectedSubjects(),
           selectedPreset: selectedPreset,
-          filterBySubject: document.getElementById('filterBySubject')?.checked || false
+          filterBySubject: document.getElementById('filterBySubject')?.checked || false,
+          excludePediatric: document.getElementById('excludePediatric')?.checked || false,
+          colorThMastery: parseFloat(document.getElementById('colorThMastery')?.value) || 0.7,
+          colorThRatio: parseFloat(document.getElementById('colorThRatio')?.value) || 0.7,
+          colorThTotalRatio: parseFloat(document.getElementById('colorThTotalRatio')?.value) || 0.6,
+          critThreshold: parseFloat(document.getElementById('critThresholdInput')?.value) || 0.8,
+          subjectOverlapThreshold: parseFloat(document.getElementById('subjectOverlapThreshold')?.value) || 0.15,
+          threshItems: parseFloat(document.getElementById('threshItemsInput')?.value) || 0.4,
+          threshSdd: parseFloat(document.getElementById('threshSddInput')?.value) || 0.5,
+          threshSubj: parseFloat(document.getElementById('threshSubjInput')?.value) || 0.4
         },
         presets: presets
       };
@@ -1506,6 +1786,10 @@
         if (s.mode) els.scopeSelect.value = s.mode;
         if (s.rang) els.rangMode.value = s.rang;
         if (s.includeChildren !== undefined) els.includeChildren.checked = s.includeChildren;
+        if (s.excludePediatric !== undefined) {
+          const epCb = document.getElementById('excludePediatric');
+          if (epCb) epCb.checked = s.excludePediatric;
+        }
         if (s.metric) {
           els.metricSelect.value = s.metric;
           STATE.chartMetric = s.metric;
@@ -1515,11 +1799,21 @@
         if (s.sortField) STATE.sortField = s.sortField;
         if (s.sortDir) STATE.sortDir = s.sortDir;
         window.EDN_PENDING_ENABLED_SUBJECTS = s.enabledSubjects;
+        window.EDN_PENDING_SELECTED_SUBJECTS = s.selectedSubjects;
         window.EDN_PENDING_PRESET = s.selectedPreset;
 
         if (els.filterBySubject && s.filterBySubject !== undefined) {
           els.filterBySubject.checked = s.filterBySubject;
         }
+
+        if (s.colorThMastery !== undefined) document.getElementById('colorThMastery').value = s.colorThMastery;
+        if (s.colorThRatio !== undefined) document.getElementById('colorThRatio').value = s.colorThRatio;
+        if (s.colorThTotalRatio !== undefined) document.getElementById('colorThTotalRatio').value = s.colorThTotalRatio;
+        if (s.critThreshold !== undefined) document.getElementById('critThresholdInput').value = s.critThreshold;
+        if (s.subjectOverlapThreshold !== undefined) document.getElementById('subjectOverlapThreshold').value = s.subjectOverlapThreshold;
+        if (s.threshItems !== undefined) document.getElementById('threshItemsInput').value = s.threshItems;
+        if (s.threshSdd !== undefined) document.getElementById('threshSddInput').value = s.threshSdd;
+        if (s.threshSubj !== undefined) document.getElementById('threshSubjInput').value = s.threshSubj;
       }
 
       populatePresetsDropdown();
@@ -1573,6 +1867,7 @@
         only_rang: els.rangMode.value === 'onlyA' ? 'A' : null,
         exclude_rang: els.rangMode.value === 'notA' ? 'A' : null,
         include_children: els.includeChildren.checked,
+        exclude_pediatric: document.getElementById('excludePediatric')?.checked || false,
         mask_threshold: threshold,
         window_days: parseInt(document.getElementById('windowDaysInput')?.value) || 30,
         mature_ivl: parseInt(document.getElementById('matureIvlInput')?.value) || 21,
@@ -1580,6 +1875,7 @@
           ? getCheckedSubjectsInSettings()  // Mode Matières: use Settings presets
           : (filterBySubject ? getSelectedSubjects() : []),
         overlap_threshold: parseFloat(document.getElementById('subjectOverlapThreshold')?.value) || 0.15,
+        crit_threshold: parseFloat(document.getElementById('critThresholdInput')?.value) || 0.8,
         blacklist: document.getElementById('blacklistInput')?.value || ""
       };
 
@@ -1665,6 +1961,7 @@
           // If user manually clicks, deselect the preset (as it's now a custom selection)
           const presetSelect = document.getElementById('subjectPreset');
           if (presetSelect) presetSelect.value = '';
+          syncSubjectsToDropdown();
           saveState();
         };
 
@@ -1770,7 +2067,7 @@
         }
 
         // 2. Only restore STARTUP state ONCE
-        if (window.EDN_PENDING_PRESET || window.EDN_PENDING_ENABLED_SUBJECTS) {
+        if (window.EDN_PENDING_PRESET || window.EDN_PENDING_ENABLED_SUBJECTS || window.EDN_PENDING_SELECTED_SUBJECTS) {
           console.log("Restoring STARTUP state (First Load)...");
 
           // Restore preset selection if any
@@ -1778,19 +2075,23 @@
             const presetSelect = document.getElementById('subjectPreset');
             if (presetSelect) {
               presetSelect.value = window.EDN_PENDING_PRESET;
-              // Force sync checkboxes from this preset
-              applyPreset(window.EDN_PENDING_PRESET, true);
             }
-          } else if (window.EDN_PENDING_ENABLED_SUBJECTS) {
-            // Individual subjects were active, sync them
+            const presets = loadPresets();
+            const preset = presets[window.EDN_PENDING_PRESET];
+            if (preset) {
+              window.EDN_PENDING_ENABLED_SUBJECTS = preset;
+              window.EDN_PENDING_SELECTED_SUBJECTS = preset;
+            }
+          }
+
+          if (window.EDN_PENDING_ENABLED_SUBJECTS) {
+            // Individual subjects were active, sync settings checkboxes
             const savedSubjects = window.EDN_PENDING_ENABLED_SUBJECTS;
             if (savedSubjects && Array.isArray(savedSubjects)) {
               // Settings modal
               document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').forEach(cb => {
                 cb.checked = savedSubjects.includes(cb.value);
               });
-              // Synchronize to main dropdown
-              syncSubjectsToDropdown();
             }
           }
 
@@ -1802,7 +2103,17 @@
         // 3. Re-populate/filter the main subject dropdown based on CURRENT checkbox states
         const list = document.getElementById('subjectList');
         if (list) {
-          const currentSel = getSelectedSubjects();
+          let currentSel;
+          if (window.EDN_PENDING_SELECTED_SUBJECTS && Array.isArray(window.EDN_PENDING_SELECTED_SUBJECTS)) {
+            currentSel = window.EDN_PENDING_SELECTED_SUBJECTS;
+            window.EDN_PENDING_SELECTED_SUBJECTS = null; // Clear it
+          } else if (!window.EDN_FIRST_POPULATE_DONE) {
+            // First load fallback if selectedSubjects is not in saved state
+            currentSel = getCheckedSubjectsInSettings();
+          } else {
+            currentSel = getSelectedSubjects();
+          }
+
           const enabledInSettings = getCheckedSubjectsInSettings();
           list.innerHTML = '';
 
@@ -1875,6 +2186,8 @@
       console.log(`Synced ${checkedValues.length} subjects to main dropdown.`);
     }
 
+
+
     function updateSubjectTriggerLabel() {
       const selected = getSelectedSubjects();
       const trigger = document.getElementById('subjectTrigger');
@@ -1903,6 +2216,363 @@
       e.stopPropagation();
     });
 
+    // === HISTORY & FORECAST ON-TAP LOGIC ===
+    let histStatesChart = null;
+    let histBacklogChart = null;
+    let forecastChartInstance = null;
+
+    function loadHistoryForecastData() {
+      const windowDays = parseInt(document.getElementById('histWindowSelect')?.value) || 90;
+      const forecastDays = parseInt(document.getElementById('forecastWindowSelect')?.value) || 30;
+      
+      const payload = {
+        window_days: windowDays,
+        forecast_days: forecastDays
+      };
+      
+      console.log("Requesting history & forecast stats:", payload);
+      send_py('get_history_forecast ' + JSON.stringify(payload));
+    }
+
+    window.EDN_receiveHistoryForecast = function(data) {
+      console.log("Received history and forecast data:", data);
+      if (!data) return;
+      renderHistoryCharts(data);
+    };
+
+    function renderHistoryCharts(data) {
+      const isNight = document.body ? document.body.classList.contains('nightMode') : false;
+      const textColor = isNight ? '#e0e0e0' : '#333';
+      const gridColor = isNight ? '#444' : '#ddd';
+      
+      const hist = data.history;
+      const fore = data.forecast;
+      
+      // Calculate average retention rate
+      let totalRevs = 0;
+      let totalCorrect = 0;
+      hist.reviews_count.forEach((c, idx) => {
+        totalRevs += c;
+        totalCorrect += hist.correct_count[idx];
+      });
+      const avgRetention = totalRevs > 0 ? Math.round((totalCorrect / totalRevs) * 100) : 0;
+      
+      // Calculate backlog metrics
+      const currentBacklog = hist.overdue[hist.overdue.length - 1];
+      const totalMinutes = Math.round(hist.study_time_min.reduce((acc, v) => acc + v, 0));
+      
+      // Reliability of retention: compare total reviews vs current backlog
+      // High revisions + low backlog = reliable retention measurement
+      const avgDailyRevs = totalRevs / Math.max(1, hist.reviews_count.filter(v => v > 0).length);
+      const reliabilityRatio = currentBacklog > 0 ? Math.min(1, avgDailyRevs / Math.max(1, currentBacklog)) : 1.0;
+      const reliabilityPct = Math.round(reliabilityRatio * 100);
+      let reliabilityLabel, reliabilityColor;
+      if (reliabilityPct >= 80) { reliabilityLabel = '✅ Fiable'; reliabilityColor = '#388e3c'; }
+      else if (reliabilityPct >= 50) { reliabilityLabel = '⚠️ Modérée'; reliabilityColor = '#f57c00'; }
+      else { reliabilityLabel = '❌ Peu fiable'; reliabilityColor = '#d32f2f'; }
+      
+      const retentionColor = avgRetention >= 80 ? '#388e3c' : avgRetention >= 70 ? '#f57c00' : '#d32f2f';
+      document.getElementById('retentionStatsLabel').innerHTML = `Révisions : <b>${totalRevs}</b> — Rétention : <span style="color:${retentionColor}; font-weight:bold;">${avgRetention}%</span> — Fiabilité : <span style="color:${reliabilityColor}; font-weight:bold;" title="Fiabilité = Révisions/jour ÷ Retard. Haute fiabilité si peu de retard et bcp de révisions">${reliabilityLabel}</span>`;
+      document.getElementById('backlogStatsLabel').innerHTML = `Retard : <span style="color:#d32f2f; font-weight:bold;">${currentBacklog} cartes</span> — Temps : <b>${totalMinutes} min</b>`;
+      
+      // Calculate forecast metrics
+      const totalScheduled = fore.scheduled.reduce((acc, v) => acc + v, 0);
+      const totalSimulated = Math.round(fore.simulated.reduce((acc, v) => acc + v, 0));
+      document.getElementById('forecastStatsLabel').innerHTML = `Prévues : <b>${totalScheduled}</b> — FSRS Estimé : <b style="color:#2c7bb6;">${totalSimulated}</b>`;
+
+      // Chart 1: Évolution des États & Rétention
+      if (histStatesChart) histStatesChart.destroy();
+      const ctx1 = document.getElementById('histStatesChart').getContext('2d');
+      
+      const retentionRates = hist.reviews_count.map((c, idx) => {
+        if (c === 0) return null;
+        return Math.round((hist.correct_count[idx] / c) * 100);
+      });
+      
+      histStatesChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: hist.dates,
+          datasets: [
+            {
+              label: 'Matures',
+              data: hist.mature,
+              backgroundColor: '#005500',
+              stack: 'states',
+              order: 2
+            },
+            {
+              label: 'Récentes',
+              data: hist.recent,
+              backgroundColor: '#5cb85c',
+              stack: 'states',
+              order: 2
+            },
+            {
+              label: 'En apprentissage',
+              data: hist.learning,
+              backgroundColor: '#f0ad4e',
+              stack: 'states',
+              order: 2
+            },
+            {
+              label: 'Inédites',
+              data: hist.new,
+              backgroundColor: '#00aaff',
+              stack: 'states',
+              order: 2
+            },
+            {
+              label: 'Suspendues',
+              data: hist.suspended,
+              backgroundColor: isNight ? '#555' : '#ccc',
+              stack: 'states',
+              order: 2
+            },
+            {
+              label: 'Rétention réelle (%)',
+              data: retentionRates,
+              borderColor: '#e91e63',
+              backgroundColor: 'transparent',
+              type: 'line',
+              yAxisID: 'yRetention',
+              tension: 0.15,
+              spanGaps: true,
+              borderWidth: 2.5,
+              pointRadius: 2,
+              order: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              grid: { color: gridColor },
+              ticks: { color: textColor },
+              title: { display: true, text: 'Nombre de cartes', color: textColor }
+            },
+            yRetention: {
+              display: 'auto',
+              position: 'right',
+              min: 0,
+              max: 100,
+              grid: { display: false },
+              ticks: { color: '#e91e63', callback: (val) => `${val}%` },
+              title: { display: true, text: 'Rétention (%)', color: '#e91e63' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: textColor, maxTicksLimit: 15 }
+            }
+          },
+          plugins: {
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                afterBody: function(tooltipItems) {
+                  const idx = tooltipItems[0]?.dataIndex;
+                  if (idx === undefined) return [];
+                  const revs = hist.reviews_count[idx] || 0;
+                  const overdue = hist.overdue[idx] || 0;
+                  if (revs > 0 && overdue > 0) {
+                    const rel = Math.min(100, Math.round(revs / Math.max(1, overdue) * 100));
+                    return ['Fiabilit\u00e9 r\u00e9tention: ' + rel + '%'];
+                  }
+                  return [];
+                }
+              }
+            },
+            legend: {
+              position: 'bottom',
+              labels: { color: textColor, boxWidth: 12 }
+            }
+          }
+        }
+      });
+
+      // Chart 2: Retard & Volume de Révisions
+      if (histBacklogChart) histBacklogChart.destroy();
+      const ctx2 = document.getElementById('histBacklogChart').getContext('2d');
+      
+      histBacklogChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: hist.dates,
+          datasets: [
+            {
+              label: 'Révisions effectuées',
+              data: hist.reviews_count,
+              backgroundColor: '#93c47d',
+              yAxisID: 'y',
+              order: 2
+            },
+            {
+              label: 'Cartes en retard (Backlog)',
+              data: hist.overdue,
+              borderColor: '#d9534f',
+              backgroundColor: 'rgba(217, 83, 79, 0.05)',
+              borderWidth: 2,
+              type: 'line',
+              tension: 0.15,
+              yAxisID: 'y',
+              order: 1
+            },
+            {
+              label: 'Temps d\'étude (min)',
+              data: hist.study_time_min,
+              backgroundColor: '#a2c4c9',
+              yAxisID: 'yTime',
+              hidden: true,
+              order: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: gridColor },
+              ticks: { color: textColor },
+              title: { display: true, text: 'Nombre de cartes', color: textColor }
+            },
+            yTime: {
+              display: 'auto',
+              position: 'right',
+              beginAtZero: true,
+              grid: { display: false },
+              ticks: { color: '#45818e' },
+              title: { display: true, text: 'Temps (minutes)', color: '#45818e' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: textColor, maxTicksLimit: 15 }
+            }
+          },
+          plugins: {
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                afterBody: function(tooltipItems) {
+                  const idx = tooltipItems[0]?.dataIndex;
+                  if (idx === undefined) return [];
+                  const revs = hist.reviews_count[idx] || 0;
+                  const overdue = hist.overdue[idx] || 0;
+                  if (revs > 0 && overdue > 0) {
+                    const rel = Math.min(100, Math.round(revs / Math.max(1, overdue) * 100));
+                    return ['Fiabilit\u00e9 r\u00e9tention: ' + rel + '%'];
+                  }
+                  return [];
+                }
+              }
+            },
+            legend: {
+              position: 'bottom',
+              labels: { color: textColor, boxWidth: 12 }
+            }
+          }
+        }
+      });
+
+      // Chart 3: Prévisions FSRS
+      if (forecastChartInstance) forecastChartInstance.destroy();
+      const ctx3 = document.getElementById('forecastChart').getContext('2d');
+      
+      forecastChartInstance = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: fore.dates,
+          datasets: [
+            {
+              label: 'Planifiées (Anki)',
+              data: fore.scheduled,
+              backgroundColor: isNight ? '#3a6073' : '#a0c4ff',
+              borderWidth: 0,
+              categoryPercentage: 0.6,
+              barPercentage: 0.8
+            },
+            {
+              label: 'Estimées FSRS (Simulation)',
+              data: fore.simulated,
+              backgroundColor: '#3d85c6',
+              borderWidth: 0,
+              categoryPercentage: 0.6,
+              barPercentage: 0.8
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: gridColor },
+              ticks: { color: textColor },
+              title: { display: true, text: 'Révisions prévues', color: textColor }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: textColor, maxTicksLimit: 15 }
+            }
+          },
+          plugins: {
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                afterBody: function(tooltipItems) {
+                  const idx = tooltipItems[0]?.dataIndex;
+                  if (idx === undefined) return [];
+                  const revs = hist.reviews_count[idx] || 0;
+                  const overdue = hist.overdue[idx] || 0;
+                  if (revs > 0 && overdue > 0) {
+                    const rel = Math.min(100, Math.round(revs / Math.max(1, overdue) * 100));
+                    return ['Fiabilit\u00e9 r\u00e9tention: ' + rel + '%'];
+                  }
+                  return [];
+                }
+              }
+            },
+            legend: {
+              position: 'bottom',
+              labels: { color: textColor, boxWidth: 12 }
+            }
+          }
+        }
+      });
+    }
+
+    // Tab switcher event listeners
+    const topControls = document.querySelector('.top-controls');
+    document.getElementById('tabOverview')?.addEventListener('click', () => {
+      document.getElementById('tabOverview').classList.add('active');
+      document.getElementById('tabHistory').classList.remove('active');
+      document.getElementById('overview').style.display = 'block';
+      document.getElementById('historyForecastSection').style.display = 'none';
+      if (topControls) topControls.style.display = '';
+    });
+
+    document.getElementById('tabHistory')?.addEventListener('click', () => {
+      document.getElementById('tabOverview').classList.remove('active');
+      document.getElementById('tabHistory').classList.add('active');
+      document.getElementById('overview').style.display = 'none';
+      document.getElementById('historyForecastSection').style.display = 'block';
+      if (topControls) topControls.style.display = 'none';
+      loadHistoryForecastData();
+    });
+
+    document.getElementById('refreshHistBtn')?.addEventListener('click', loadHistoryForecastData);
+    document.getElementById('histWindowSelect')?.addEventListener('change', loadHistoryForecastData);
+    document.getElementById('forecastWindowSelect')?.addEventListener('change', loadHistoryForecastData);
+
     // === INITIALIZATION ===
     function EDN_init() {
       if (window.EDN_INIT_DONE) return;
@@ -1913,6 +2583,8 @@
       els.scopeSelect.value = 'items';
       els.rangMode.value = 'all';
       els.includeChildren.checked = false;
+      const epCb = document.getElementById('excludePediatric');
+      if (epCb) epCb.checked = false;
       if (els.filterBySubject) els.filterBySubject.checked = false;
       updateSubjectFilterVisibility();
       els.metricSelect.value = 'studied_total_ratio'; // Default: Appris/Total

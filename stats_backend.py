@@ -168,7 +168,7 @@ def compute_item_difficulty_for_cards(card_objs, window_days=30, weights=(0.6,0.
 
     return 0.0, {}
 
-def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None, mature_ivl=21, subject_filter=None):
+def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None, mature_ivl=21, subject_filter=None, exclude_pediatric=False):
     # User requested: "Quand les enfants ne sont pas inclus, les tags doivent inclure leurs enfants"
     # This implies that the stats for 'EDN::item-005' MUST include 'EDN::item-005::Child'.
     # Anki's search `tag:foo` AUTOMATICALLY includes `tag:foo::bar`. 
@@ -218,6 +218,12 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
             
         # note tag-based rang filter
         ntags_lower = [t.lower().replace('-', '::').replace('_', '::') for t in (note.tags or [])]
+        
+        # Pediatric exclusion
+        if exclude_pediatric:
+            if any(t == "pédiatrie" or t.startswith("pédiatrie::") or "::pédiatrie" in t or
+                   t == "pediatrie" or t.startswith("pediatrie::") or "::pediatrie" in t for t in ntags_lower):
+                continue
         
         if only_rang:
             if not any(t.endswith(f'::{only_rang.lower()}') or t==f'rang::{only_rang.lower()}' for t in ntags_lower):
@@ -413,18 +419,19 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
     return result
 
 @perf_log
-def collect_overview(mode='items', only_rang=None, exclude_rang=None, include_children=False, subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, window_days=30, mature_ivl=21, subject_blacklist=None, subject_filter=None, overlap_threshold=0.15):
+def collect_overview(mode='items', only_rang=None, exclude_rang=None, include_children=False, subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, window_days=30, mature_ivl=21, subject_blacklist=None, subject_filter=None, overlap_threshold=0.15, crit_threshold=0.8, exclude_pediatric=False):
     # Use batch SQL optimization (activated in production)
     return collect_overview_batch(
         mode=mode, only_rang=only_rang, exclude_rang=exclude_rang,
         include_children=include_children, subject_tags=subject_tags,
         suspend_mask_threshold=suspend_mask_threshold, window_days=window_days,
         mature_ivl=mature_ivl, subject_blacklist=subject_blacklist,
-        subject_filter=subject_filter, overlap_threshold=overlap_threshold
+        subject_filter=subject_filter, overlap_threshold=overlap_threshold,
+        crit_threshold=crit_threshold, exclude_pediatric=exclude_pediatric
     )
 
 
-def _collect_overview_original(mode='items', only_rang=None, exclude_rang=None, include_children=False, subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, window_days=30, mature_ivl=21, subject_blacklist=None, subject_filter=None, overlap_threshold=0.15):
+def _collect_overview_original(mode='items', only_rang=None, exclude_rang=None, include_children=False, subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, window_days=30, mature_ivl=21, subject_blacklist=None, subject_filter=None, overlap_threshold=0.15, crit_threshold=0.8, exclude_pediatric=False):
     """Original implementation (kept for reference/fallback)."""
     if mode == 'items':
         units = _all_item_tags()
@@ -477,7 +484,7 @@ def _collect_overview_original(mode='items', only_rang=None, exclude_rang=None, 
                  pass
             return name
 
-        stats = collect_stats_for_tag(u, window_days=window_days, only_rang=only_rang, exclude_rang=exclude_rang, mature_ivl=mature_ivl, subject_filter=subject_filter)
+        stats = collect_stats_for_tag(u, window_days=window_days, only_rang=only_rang, exclude_rang=exclude_rang, mature_ivl=mature_ivl, subject_filter=subject_filter, exclude_pediatric=exclude_pediatric)
         
         # Subject Filter Logic for non-subject modes (Items/SDD)
         if mode != 'subject' and subject_filter and stats['total'] > 0:
@@ -498,7 +505,7 @@ def _collect_overview_original(mode='items', only_rang=None, exclude_rang=None, 
     mastery_list = [it['mastery'] for it in items if it.get('total',0)>0]
     difficulty_list = [it['difficulty'] for it in items if it.get('total',0)>0]
     desuspended_count = sum(1 for it in items if it.get('total',0)>0 and (1 - it['percent'].get('suspended',0.0)) > DESUSPENDED_THRESHOLD)
-    critical_count = sum(1 for it in items if it.get('total',0)>0 and it.get('difficulty',0.0) >= 0.5)
+    critical_count = sum(1 for it in items if it.get('total',0)>0 and it.get('difficulty',0.0) > crit_threshold)
     
     # CRITICAL: available_subjects should be ALL subjects for the dropdown, regardless of current selection
     all_subjects = _all_subject_tags(blacklist=subject_blacklist)
@@ -613,7 +620,8 @@ def _match_tag_hierarchy(note_tags_lower, target_tag_lower):
 def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, include_children=False, 
                           subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, 
                           window_days=30, mature_ivl=21, subject_blacklist=None, 
-                          subject_filter=None, overlap_threshold=0.15):
+                          subject_filter=None, overlap_threshold=0.15, crit_threshold=0.8,
+                          exclude_pediatric=False):
     """
     Batch SQL version of collect_overview.
     Loads all cards in ONE query, then processes in memory.
@@ -669,7 +677,14 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
         tag_l = tag.lower()
         stats_by_tag[tag_l] = {
             'tag': tag,
-            'counts': {'new':0,'learning':0,'relearning':0,'recent':0,'mature':0,'suspended':0,'buried':0,'other':0},
+            'counts': {
+                'new':0,'learning':0,'relearning':0,'recent':0,'mature':0,'suspended':0,'buried':0,'other':0,
+                'new_suspended': 0, 'new_buried': 0,
+                'learning_suspended': 0, 'learning_buried': 0,
+                'relearning_suspended': 0, 'relearning_buried': 0,
+                'recent_suspended': 0, 'recent_buried': 0,
+                'mature_suspended': 0, 'mature_buried': 0
+            },
             'nids': set(),  # Track unique notes
             'nid_card_states': {},  # {nid: [(base_type, suspension), ...]}
             'subject_overlap_nids': set()
@@ -703,6 +718,12 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
         # Parse note tags
         note_tags = tags_str.split()
         note_tags_lower = [t.lower() for t in note_tags]
+        
+        # Apply pediatric exclusion
+        if exclude_pediatric:
+            if any(t == "pédiatrie" or t.startswith("pédiatrie::") or "::pédiatrie" in t or
+                   t == "pediatrie" or t.startswith("pediatrie::") or "::pediatrie" in t for t in note_tags_lower):
+                continue
         
         # Apply rang filters
         if only_rang_lower:
@@ -779,7 +800,14 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     classify_start = time.time()
     for tag_l, stat in stats_by_tag.items():
         # Reset counts - we'll recompute from accumulated card states
-        stat['counts'] = {'new':0,'learning':0,'relearning':0,'recent':0,'mature':0,'suspended':0,'buried':0,'other':0}
+        stat['counts'] = {
+            'new':0,'learning':0,'relearning':0,'recent':0,'mature':0,'suspended':0,'buried':0,'other':0,
+            'new_suspended': 0, 'new_buried': 0,
+            'learning_suspended': 0, 'learning_buried': 0,
+            'relearning_suspended': 0, 'relearning_buried': 0,
+            'recent_suspended': 0, 'recent_buried': 0,
+            'mature_suspended': 0, 'mature_buried': 0
+        }
         
         for nid, card_states in stat['nid_card_states'].items():
             active_states = [(bt, s) for bt, s in card_states if s == 'active']
@@ -788,8 +816,45 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
             all_suspended_or_buried = all(s in ('suspended', 'buried') for _, s in card_states)
             
             if all_suspended:
+                # Determine what TYPE of suspended (use highest priority active type)
+                # Check types in priority order
+                has_new_suspended = any(bt == 'new' and s == 'suspended' for bt, s in card_states)
+                has_learning_suspended = any(bt == 'learning' and s == 'suspended' for bt, s in card_states)
+                has_relearning_suspended = any(bt == 'relearning' and s == 'suspended' for bt, s in card_states)
+                has_recent_suspended = any(bt == 'recent' and s == 'suspended' for bt, s in card_states)
+                has_mature_suspended = any(bt == 'mature' and s == 'suspended' for bt, s in card_states)
+                
+                if has_new_suspended:
+                    stat['counts']['new_suspended'] += 1
+                elif has_learning_suspended:
+                    stat['counts']['learning_suspended'] += 1
+                elif has_relearning_suspended:
+                    stat['counts']['relearning_suspended'] += 1
+                elif has_recent_suspended:
+                    stat['counts']['recent_suspended'] += 1
+                elif has_mature_suspended:
+                    stat['counts']['mature_suspended'] += 1
+                
                 stat['counts']['suspended'] += 1
             elif all_buried:
+                # Determine what TYPE of buried
+                has_new_buried = any(bt == 'new' and s == 'buried' for bt, s in card_states)
+                has_learning_buried = any(bt == 'learning' and s == 'buried' for bt, s in card_states)
+                has_relearning_buried = any(bt == 'relearning' and s == 'buried' for bt, s in card_states)
+                has_recent_buried = any(bt == 'recent' and s == 'buried' for bt, s in card_states)
+                has_mature_buried = any(bt == 'mature' and s == 'buried' for bt, s in card_states)
+                
+                if has_new_buried:
+                    stat['counts']['new_buried'] += 1
+                elif has_learning_buried:
+                    stat['counts']['learning_buried'] += 1
+                elif has_relearning_buried:
+                    stat['counts']['relearning_buried'] += 1
+                elif has_recent_buried:
+                    stat['counts']['recent_buried'] += 1
+                elif has_mature_buried:
+                    stat['counts']['mature_buried'] += 1
+                
                 stat['counts']['buried'] += 1
             elif all_suspended_or_buried:
                 stat['counts']['suspended'] += 1
@@ -922,7 +987,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     mastery_list = [it['mastery'] for it in items if it.get('total', 0) > 0]
     difficulty_list = [it['difficulty'] for it in items if it.get('total', 0) > 0]
     desuspended_count = sum(1 for it in items if it.get('total', 0) > 0 and (1 - it['percent'].get('suspended', 0.0)) > DESUSPENDED_THRESHOLD)
-    critical_count = sum(1 for it in items if it.get('total', 0) > 0 and it.get('difficulty', 0.0) >= 0.5)
+    critical_count = sum(1 for it in items if it.get('total', 0) > 0 and it.get('difficulty', 0.0) > crit_threshold)
     
     meta = {
         'median_mastery': median(mastery_list) if mastery_list else 0.0,
@@ -943,4 +1008,300 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     
     items_sorted = sorted(items, key=lambda x: x.get('mastery', 0.0))
     return {'mode': mode, 'items': items_sorted, 'meta': meta}
+
+
+def collect_history_and_forecast(window_days=90, forecast_days=30):
+    sched = mw.col.sched
+    try:
+        today_cutoff = sched.day_cutoff
+    except AttributeError:
+        today_cutoff = int(time.time())
+        
+    try:
+        today_day = sched.today
+    except AttributeError:
+        today_day = int(time.time() // 86400)
+        
+    # cutoff timestamp in milliseconds
+    cutoff_ts_ms = (today_cutoff - window_days * 86400) * 1000
+    
+    # 1. Query cards info
+    cards_rows = mw.col.db.all("SELECT id, queue, type, ivl, due FROM cards")
+    cards_info = {}
+    for cid, queue, typ, ivl, due in cards_rows:
+        cards_info[cid] = {
+            'queue': queue,
+            'type': typ,
+            'ivl': ivl,
+            'due': due
+        }
+        
+    # 2. Query revlog entries
+    rev_rows = mw.col.db.all("""
+        SELECT cid, id, ivl, ease, type, time
+        FROM revlog
+        WHERE id >= ?
+        UNION ALL
+        SELECT cid, id, ivl, ease, type, time
+        FROM revlog
+        WHERE id IN (
+            SELECT MAX(id)
+            FROM revlog
+            WHERE id < ?
+            GROUP BY cid
+        )
+        ORDER BY cid, id ASC
+    """, cutoff_ts_ms, cutoff_ts_ms)
+    
+    reviews_by_card = {}
+    for cid, r_id, ivl, ease, typ, study_time in rev_rows:
+        if cid not in reviews_by_card:
+            reviews_by_card[cid] = []
+        reviews_by_card[cid].append((r_id, ivl, ease, typ, study_time))
+        
+    # Initialize daily stats arrays
+    W = window_days
+    history_mature = [0] * W
+    history_recent = [0] * W
+    history_learning = [0] * W
+    history_new = [0] * W
+    history_suspended = [0] * W
+    history_overdue = [0] * W
+    
+    # Daily review counts & time
+    history_reviews_count = [0] * W
+    history_correct_count = [0] * W
+    history_study_time_ms = [0] * W
+    
+    def ts_to_idx(ts_ms):
+        day_offset = int((ts_ms / 1000.0 - today_cutoff) // 86400)
+        return day_offset + W
+        
+    # Track historical reviews from rev_rows
+    new_reviews_count = 0
+    for cid, r_id, ivl, ease, typ, study_time in rev_rows:
+        if r_id >= cutoff_ts_ms:
+            idx = ts_to_idx(r_id)
+            if 0 <= idx < W:
+                history_reviews_count[idx] += 1
+                if ease > 1:
+                    history_correct_count[idx] += 1
+                history_study_time_ms[idx] += study_time
+            if ease == 1 or typ == 0:
+                new_reviews_count += 1
+                
+    # Average new cards per day
+    first_reviews_last_30_days = 0
+    thirty_days_ago_ts = (today_cutoff - 30 * 86400) * 1000
+    for cid, revs in reviews_by_card.items():
+        if revs and revs[0][0] >= thirty_days_ago_ts:
+            first_reviews_last_30_days += 1
+    avg_new_cards_per_day = max(1, first_reviews_last_30_days // 30)
+    if avg_new_cards_per_day > 50:
+        avg_new_cards_per_day = 50
+        
+    def fill_state(state, s_idx, e_idx):
+        s = max(0, s_idx)
+        e = min(W - 1, e_idx)
+        if s <= e:
+            if state == 'mature':
+                for idx in range(s, e + 1): history_mature[idx] += 1
+            elif state == 'recent':
+                for idx in range(s, e + 1): history_recent[idx] += 1
+            elif state == 'learning':
+                for idx in range(s, e + 1): history_learning[idx] += 1
+            elif state == 'new':
+                for idx in range(s, e + 1): history_new[idx] += 1
+            elif state == 'suspended':
+                for idx in range(s, e + 1): history_suspended[idx] += 1
+
+    def fill_overdue(s_idx, e_idx):
+        s = max(0, s_idx)
+        e = min(W - 1, e_idx)
+        for idx in range(s, e + 1):
+            history_overdue[idx] += 1
+            
+    # Process timelines for all cards
+    for cid, c_info in cards_info.items():
+        revs = reviews_by_card.get(cid)
+        current_queue = c_info['queue']
+        
+        if not revs:
+            if current_queue == -1:
+                fill_state('suspended', 0, W - 1)
+            elif current_queue == 0:
+                fill_state('new', 0, W - 1)
+            else:
+                fill_state('learning', 0, W - 1)
+        else:
+            first_r_ts = revs[0][0]
+            first_idx = ts_to_idx(first_r_ts)
+            if first_idx > 0:
+                fill_state('suspended', 0, first_idx - 1)
+                
+            for k in range(len(revs) - 1):
+                r_ts = revs[k][0]
+                r_ivl = revs[k][1]
+                next_r_ts = revs[k+1][0]
+                
+                idx_k = ts_to_idx(r_ts)
+                idx_next = ts_to_idx(next_r_ts)
+                
+                if r_ivl >= 21:
+                    S_k = 'mature'
+                elif 0 < r_ivl < 21:
+                    S_k = 'recent'
+                else:
+                    S_k = 'learning'
+                    
+                fill_state(S_k, idx_k, idx_next - 1)
+                
+                # Only count overdue for actual review cards (ivl > 0 = days)
+                # ivl < 0 means seconds (learning step) → no meaningful "due date"
+                # ivl == 0 means first review → no due date yet
+                if r_ivl > 0:
+                    due_ts = r_ts + r_ivl * 86400000
+                    idx_due = ts_to_idx(due_ts)
+                    # Card is overdue if it was due before the next actual review
+                    # AND within our window
+                    if idx_due < idx_next and idx_due >= 0:
+                        fill_overdue(idx_due, min(idx_next - 1, W - 1))
+                    
+            last_r_ts = revs[-1][0]
+            last_r_ivl = revs[-1][1]
+            idx_last = ts_to_idx(last_r_ts)
+            
+            if last_r_ivl >= 21:
+                S_n = 'mature'
+            elif 0 < last_r_ivl < 21:
+                S_n = 'recent'
+            else:
+                S_n = 'learning'
+                
+            if current_queue == -1:
+                fill_state(S_n, idx_last, idx_last)
+                fill_state('suspended', idx_last + 1, W - 1)
+            else:
+                fill_state(S_n, idx_last, W - 1)
+                # Only compute overdue for actual review cards (positive ivl in days)
+                # Negative ivl = learning steps (seconds), 0 = new → no meaningful overdue
+                if last_r_ivl > 0:
+                    due_ts = last_r_ts + last_r_ivl * 86400000
+                    idx_due = ts_to_idx(due_ts)
+                    if 0 <= idx_due <= W - 1:
+                        fill_overdue(idx_due, W - 1)
+
+    # 3. Future scheduled due cards
+    scheduled_due = [0] * forecast_days
+    for cid, c_info in cards_info.items():
+        queue = c_info['queue']
+        due = c_info['due']
+        
+        if queue == 2:
+            k = due - today_day
+            if 0 <= k < forecast_days:
+                scheduled_due[k] += 1
+        elif queue in (1, 3):
+            due_day_offset = int((due - today_cutoff) // 86400)
+            k = due_day_offset + 1
+            if 0 <= k < forecast_days:
+                scheduled_due[k] += 1
+
+    # 4. FSRS Future Simulator
+    simulated_due = [0.0] * forecast_days
+    sim_cards = []
+    
+    for cid, c_info in cards_info.items():
+        queue = c_info['queue']
+        due = c_info['due']
+        ivl = c_info['ivl']
+        
+        S = float(max(1.0, ivl))
+        try:
+            card = mw.col.get_card(cid)
+            ms = getattr(card, 'memory_state', None)
+            if ms and hasattr(ms, 'stability'):
+                S = float(ms.stability)
+        except:
+            pass
+            
+        if queue == 2:
+            d = due - today_day
+        elif queue in (1, 3):
+            d = int((due - today_cutoff) // 86400) + 1
+        else:
+            continue
+            
+        if d < 0:
+            d = 0
+            
+        if d < forecast_days:
+            sim_cards.append((d, 1.0, S))
+
+    # Iterative FSRS propagation using a heap queue (no recursion → safe for 365 days)
+    import heapq
+    heap = []
+    MIN_PROB = 0.005  # Lower threshold for longer windows
+    
+    def schedule_card(day, prob, S):
+        if day >= forecast_days or prob < MIN_PROB:
+            return
+        heapq.heappush(heap, (day, -prob, S))  # min-heap by day
+    
+    # Seed with all existing scheduled cards
+    for day, prob, S in sim_cards:
+        schedule_card(day, prob, S)
+    
+    # Add new card projections
+    for d in range(forecast_days):
+        schedule_card(d + 1, float(avg_new_cards_per_day), 1.0)
+    
+    # Process heap iteratively
+    while heap:
+        day, neg_prob, S = heapq.heappop(heap)
+        prob = -neg_prob
+        if day >= forecast_days:
+            continue
+        simulated_due[day] += prob
+        
+        # Pass: stability grows, next review further out
+        new_S_pass = S * 2.5
+        pass_ivl = max(1, int(round(new_S_pass)))
+        schedule_card(day + pass_ivl, prob * 0.9, new_S_pass)
+        
+        # Fail: stability resets to 1, review next day
+        schedule_card(day + 1, prob * 0.1, 1.0)
+
+    simulated_due_rounded = [round(x, 1) for x in simulated_due]
+
+    import datetime
+    history_dates = []
+    for offset in range(-window_days + 1, 1):
+        dt = datetime.datetime.fromtimestamp(today_cutoff + offset * 86400)
+        history_dates.append(dt.strftime("%d/%m"))
+        
+    forecast_dates = []
+    for offset in range(forecast_days):
+        dt = datetime.datetime.fromtimestamp(today_cutoff + offset * 86400)
+        forecast_dates.append(dt.strftime("%d/%m"))
+
+    return {
+        'history': {
+            'dates': history_dates,
+            'mature': history_mature,
+            'recent': history_recent,
+            'learning': history_learning,
+            'new': history_new,
+            'suspended': history_suspended,
+            'overdue': history_overdue,
+            'reviews_count': history_reviews_count,
+            'correct_count': history_correct_count,
+            'study_time_min': [round(x / 60000.0, 1) for x in history_study_time_ms]
+        },
+        'forecast': {
+            'dates': forecast_dates,
+            'scheduled': scheduled_due,
+            'simulated': simulated_due_rounded
+        }
+    }
 

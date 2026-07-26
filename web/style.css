@@ -424,3 +424,24 @@ canvas {
   border: 1px solid var(--border);
   margin-bottom: 20px;
 }
+
+/* History view specific layout */
+.history-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.history-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+body.nightMode .history-card {
+  background: #3a3a3a !important;
+  border-color: #555 !important;
+}

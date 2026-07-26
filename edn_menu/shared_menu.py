@@ -12,10 +12,17 @@ import os
 _edn_menu = None
 _config_path = None  # Will be initialized lazily when needed
 
+_local_registry = {}
+
 def _get_registry() -> dict:
     """Get the global module registry shared across all EDN addons via mw."""
+    if mw is None:
+        return _local_registry
     if not hasattr(mw, '_edn_registered_modules'):
         mw._edn_registered_modules = {}
+    if _local_registry:
+        mw._edn_registered_modules.update(_local_registry)
+        _local_registry.clear()
     return mw._edn_registered_modules
 
 def _get_config_path():
@@ -23,7 +30,7 @@ def _get_config_path():
     global _config_path
     if _config_path is None:
         # Prevent crash if profile is not yet loaded (e.g. during addon scan)
-        if not mw.pm or not mw.pm.name:
+        if mw is None or not mw.pm or not mw.pm.name:
             return None
         # CRITICAL: Use profile folder for shared config across all EDN addons
         _config_path = os.path.join(mw.pm.profileFolder(), "edn_shared_config.json")
@@ -204,3 +211,29 @@ def open_settings_dialog():
             title="Composants optionnels manquants"
         )
 
+def _initialize_card_styles_on_start():
+    if not mw:
+        return
+    if not hasattr(mw, "_edn_card_styles_initialized"):
+        mw._edn_card_styles_initialized = True
+        try:
+            if __package__:
+                from . import card_styles
+            else:
+                import card_styles
+            
+            card_styles.init_card_styles()
+            
+            # Forcer l'écriture immédiate et la synchronisation initiale
+            card_styles._on_profile_opened()
+            
+            # Enregistrer la construction du menu après l'initialisation de la fenêtre principale
+            from aqt import gui_hooks
+            gui_hooks.main_window_did_init.append(card_styles.setup_card_styles_menu)
+        except ImportError:
+            pass
+        except Exception as e:
+            print(f"[shared_menu] Erreur initialisation card_styles: {e}")
+
+from aqt import gui_hooks
+gui_hooks.profile_did_open.append(_initialize_card_styles_on_start)

@@ -43,7 +43,21 @@ def collect_lite_data(*args, **kwargs):
                 'new': it['counts'].get('new', 0),
                 'suspended': it['counts'].get('suspended', 0),
                 'mature': it['counts'].get('mature', 0),
-                'learning': it['counts'].get('learning', 0)
+                'learning': it['counts'].get('learning', 0),
+                'relearning': it['counts'].get('relearning', 0),
+                'recent': it['counts'].get('recent', 0),
+                'buried': it['counts'].get('buried', 0),
+                'other': it['counts'].get('other', 0),
+                'new_suspended': it['counts'].get('new_suspended', 0),
+                'new_buried': it['counts'].get('new_buried', 0),
+                'learning_suspended': it['counts'].get('learning_suspended', 0),
+                'learning_buried': it['counts'].get('learning_buried', 0),
+                'relearning_suspended': it['counts'].get('relearning_suspended', 0),
+                'relearning_buried': it['counts'].get('relearning_buried', 0),
+                'recent_suspended': it['counts'].get('recent_suspended', 0),
+                'recent_buried': it['counts'].get('recent_buried', 0),
+                'mature_suspended': it['counts'].get('mature_suspended', 0),
+                'mature_buried': it['counts'].get('mature_buried', 0)
             }
         })
     
@@ -109,17 +123,45 @@ def open_edn_progress() -> None:
                     rang = saved_settings.get("rang", "all")
                     include_children = saved_settings.get("includeChildren", False)
                     filter_by_subject = saved_settings.get("filterBySubject", False)
-                    subject_filter = saved_settings.get("enabledSubjects", None)
-                    if not filter_by_subject and mode != 'subject':
+                    if mode == 'subject':
+                        subject_filter = saved_settings.get("enabledSubjects", None)
+                    elif filter_by_subject:
+                        subject_filter = saved_settings.get("selectedSubjects", None)
+                    else:
                         subject_filter = None
                     
+                    # Load saved stats parameters
+                    window_days = int(saved_settings.get("windowDays", 30))
+                    mature_ivl = int(saved_settings.get("matureIvl", 21))
+                    overlap_threshold = float(saved_settings.get("subjectOverlapThreshold", 0.15))
+                    crit_threshold = float(saved_settings.get("critThreshold", 0.8))
+                    exclude_pediatric = saved_settings.get("excludePediatric", False)
+                    
+                    # Masquer si Suspendu > N%
+                    thresh_items = float(saved_settings.get("threshItems", 0.4))
+                    thresh_sdd = float(saved_settings.get("threshSdd", 0.5))
+                    thresh_subj = float(saved_settings.get("threshSubj", 0.4))
+                    
+                    if mode == 'items':
+                        mask_threshold = thresh_items
+                    elif mode == 'sdd':
+                        mask_threshold = thresh_sdd
+                    else:
+                        mask_threshold = thresh_subj
+
                     data = collect_lite_data(
                         mode=mode,
                         only_rang='A' if rang == 'onlyA' else None,
                         exclude_rang='A' if rang == 'notA' else None,
                         include_children=include_children,
+                        suspend_mask_threshold=mask_threshold,
+                        window_days=window_days,
+                        mature_ivl=mature_ivl,
                         subject_filter=subject_filter,
-                        subject_blacklist=set()
+                        subject_blacklist=set(),
+                        overlap_threshold=overlap_threshold,
+                        crit_threshold=crit_threshold,
+                        exclude_pediatric=exclude_pediatric
                     )
                     web.eval(f"window.EDN_reload({json.dumps(data)});")
                 except Exception as e:
@@ -188,12 +230,30 @@ def open_edn_progress() -> None:
                     mature_ivl=payload.get("mature_ivl", 21),
                     subject_blacklist=set(),
                     subject_filter=payload.get("subject_filter", None),
-                    overlap_threshold=payload.get("overlap_threshold", 15)
+                    overlap_threshold=payload.get("overlap_threshold", 0.15),
+                    crit_threshold=payload.get("crit_threshold", 0.8),
+                    exclude_pediatric=payload.get("exclude_pediatric", False)
                 )
                 try:
                     web.eval(f"window.EDN_reload({json.dumps(data)});")
                 except Exception as e:
                     tooltip(f"Erreur: {e}")
+                return
+
+            if cmd.startswith("get_history_forecast "):
+                try:
+                    payload = json.loads(cmd[len("get_history_forecast "):])
+                    window_days = payload.get("window_days", 90)
+                    forecast_days = payload.get("forecast_days", 30)
+                    data = stats_backend.collect_history_and_forecast(
+                        window_days=window_days,
+                        forecast_days=forecast_days
+                    )
+                    web.eval(f"window.EDN_receiveHistoryForecast({json.dumps(data)});")
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    tooltip(f"Erreur historique: {e}")
                 return
 
             if cmd == "open_tag_browser":
@@ -252,7 +312,6 @@ def open_edn_progress() -> None:
 
             if cmd == "export_csv":
                 from aqt.utils import getSaveFile
-                from . import stats_backend
                 
                 # Fix: getSaveFile(parent, title, dir, key, ext) or similar depending on Anki version
                 # Correct usage for recent Anki: getSaveFile(mw, "Title", "def", "key", ".csv") 
