@@ -2273,7 +2273,8 @@
       
       const retentionColor = avgRetention >= 80 ? '#388e3c' : avgRetention >= 70 ? '#f57c00' : '#d32f2f';
       document.getElementById('retentionStatsLabel').innerHTML = `Révisions : <b>${totalRevs}</b> — Rétention : <span style="color:${retentionColor}; font-weight:bold;">${avgRetention}%</span> — Fiabilité : <span style="color:${reliabilityColor}; font-weight:bold;" title="Fiabilité = Révisions/jour ÷ Retard. Haute fiabilité si peu de retard et bcp de révisions">${reliabilityLabel}</span>`;
-      document.getElementById('backlogStatsLabel').innerHTML = `Retard : <span style="color:#d32f2f; font-weight:bold;">${currentBacklog} cartes</span> — Temps : <b>${totalMinutes} min</b>`;
+      const avgTimePerCard = totalRevs > 0 ? ((totalMinutes * 60) / totalRevs).toFixed(1) : '0';
+      document.getElementById('backlogStatsLabel').innerHTML = `Retard : <span style="color:#d32f2f; font-weight:bold;">${currentBacklog} cartes</span> — Temps : <b>${totalMinutes} min</b> (~<b>${avgTimePerCard}s</b>/carte)`;
       
       // Calculate forecast metrics
       const totalScheduled = fore.scheduled.reduce((acc, v) => acc + v, 0);
@@ -2423,11 +2424,19 @@
               order: 1
             },
             {
-              label: 'Temps d\'étude (min)',
-              data: hist.study_time_min,
-              backgroundColor: '#a2c4c9',
+              label: 'Temps moyen (s/carte)',
+              data: hist.reviews_count.map((revs, idx) => {
+                const mins = hist.study_time_min[idx] || 0;
+                return revs > 0 ? parseFloat(((mins * 60) / revs).toFixed(1)) : null;
+              }),
+              borderColor: '#45818e',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              type: 'line',
+              tension: 0.15,
+              spanGaps: true,
               yAxisID: 'yTime',
-              hidden: true,
+              hidden: false,
               order: 3
             }
           ]
@@ -2447,8 +2456,8 @@
               position: 'right',
               beginAtZero: true,
               grid: { display: false },
-              ticks: { color: '#45818e' },
-              title: { display: true, text: 'Temps (minutes)', color: '#45818e' }
+              ticks: { color: '#45818e', callback: (val) => `${val}s` },
+              title: { display: true, text: 'Temps moyen (s/carte)', color: '#45818e' }
             },
             x: {
               grid: { display: false },
@@ -2465,11 +2474,19 @@
                   if (idx === undefined) return [];
                   const revs = hist.reviews_count[idx] || 0;
                   const overdue = hist.overdue[idx] || 0;
+                  const mins = hist.study_time_min[idx] || 0;
+                  const lines = [];
                   if (revs > 0 && overdue > 0) {
                     const rel = Math.min(100, Math.round(revs / Math.max(1, overdue) * 100));
-                    return ['Fiabilit\u00e9 r\u00e9tention: ' + rel + '%'];
+                    lines.push('Fiabilité rétention: ' + rel + '%');
                   }
-                  return [];
+                  const chart = tooltipItems[0].chart;
+                  const isTimeDatasetVisible = chart ? chart.isDatasetVisible(2) : true;
+                  if (!isTimeDatasetVisible && revs > 0) {
+                    const avgSec = ((mins * 60) / revs).toFixed(1);
+                    lines.push('Temps moyen: ' + avgSec + ' s/carte');
+                  }
+                  return lines;
                 }
               }
             },
