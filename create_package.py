@@ -9,6 +9,7 @@ DEST_PATH = os.path.join(SOURCE_DIR, "Anki_EDN_Stats.ankiaddon")
 
 EXCLUDES = [
     "__pycache__",
+    "meta.json",
     "user_state.json",
     "tests",
     "debug_",

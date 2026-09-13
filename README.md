@@ -4,7 +4,7 @@
 
 ## 📊 Vue d'ensemble
 
-**EDN Progress** est un module complémentaire conçu pour les utilisateurs du [**deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/) (gratuit et communautaire). Il offre une visualisation complète et dynamique de votre progression, de vos révisions passées et de vos charges de travail futures.
+**EDN Progress** est un module complémentaire conçu pour les utilisateurs du [**deck Anki EDN**](https://c2su.github.io/Anki_EDN/Anki_EDN.html) (gratuit et communautaire). Il offre une visualisation complète et dynamique de votre progression, de vos révisions passées et de vos charges de travail futures.
 
 ![3.png](3.png)
 
@@ -66,7 +66,7 @@ Centralisé via le menu `Réglages Cartes EDN` :
 
 - **Anki** : Version 23.10 ou supérieure recommandée (Requis pour l'intégration FSRS).
 - **Système** : Qt6 (Windows, macOS, Linux).
-- **Deck Requis** : Conçu spécifiquement pour le [**Deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/).
+- **Deck Requis** : Conçu spécifiquement pour le [**Deck Anki EDN**](https://c2su.github.io/Anki_EDN/Anki_EDN.html).
 
 ## ❓ FAQ
 ### Puis-je l'utiliser sans le deck EDN ?
@@ -76,7 +76,7 @@ L'addon cherche des structures spécifiques de tags (`EDN::item-XXX`). Il foncti
 Assurez-vous d'avoir coché les paramètres d'historique adéquats et d'avoir effectué des révisions sur le deck EDN durant la période sélectionnée.
 
 ## 🔗 Liens
-- [**Deck Anki EDN**](https://tools.c2su.org/Anki_EDN/book/)
+- [**Deck Anki EDN**](https://c2su.github.io/Anki_EDN/Anki_EDN.html)
 - [**Discord**](https://discord.gg/2A7zHAEBYt)
 - [**GitHub Repository**](https://github.com/C2SU/Anki_EDN_Stats)
 - [**AnkiWeb Page**](https://ankiweb.net/shared/info/1674438508)

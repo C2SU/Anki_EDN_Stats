@@ -15,6 +15,36 @@ def _now_ms():
 def clamp01(val):
     return max(0.0, min(1.0, val))
 
+def _normalize_excluded_tags(excluded_tags, exclude_pediatric=False):
+    tags = set()
+    if exclude_pediatric:
+        tags.add("pédiatrie")
+        tags.add("pediatrie")
+    if excluded_tags:
+        if isinstance(excluded_tags, str):
+            import re
+            parts = re.split(r'[,;\n\r]+', excluded_tags)
+            for p in parts:
+                p_clean = p.strip().lower()
+                if p_clean:
+                    tags.add(p_clean)
+        elif isinstance(excluded_tags, (list, set, tuple)):
+            for p in excluded_tags:
+                if isinstance(p, str):
+                    p_clean = p.strip().lower()
+                    if p_clean:
+                        tags.add(p_clean)
+    return tags
+
+def _is_note_excluded(note_tags_lower, excluded_set):
+    if not excluded_set:
+        return False
+    for t in note_tags_lower:
+        for ex in excluded_set:
+            if t == ex or t.startswith(ex + "::") or t.endswith("::" + ex) or f"::{ex}::" in t or ("::" + ex) in t:
+                return True
+    return False
+
 def _all_subject_tags(blacklist=None):
     tags = mw.col.tags.all()
     # Default blacklist if none provided
@@ -46,16 +76,116 @@ def _all_sdd_tags():
     return sorted([t for t in mw.col.tags.all() if is_sdd(t)])
 
 
-def cards_of_note(note):
+def _get_all_available_decks():
+    """Returns sorted list of deck dicts [{'name': dname, 'filtered': bool}] present in collection."""
+    try:
+        if not hasattr(mw, "col") or mw.col is None:
+            return []
+        if hasattr(mw.col, "decks") and hasattr(mw.col.decks, "all_names_and_ids"):
+            decks_list = []
+            for d in mw.col.decks.all_names_and_ids():
+                if not d.name:
+                    continue
+                dname = d.name.replace("\x1f", "::")
+                is_dyn = False
+                try:
+                    if hasattr(mw.col.decks, "is_filtered"):
+                        is_dyn = mw.col.decks.is_filtered(d.id)
+                    else:
+                        d_obj = mw.col.decks.get(d.id, default=False)
+                        is_dyn = bool(d_obj and d_obj.get("dyn"))
+                except Exception:
+                    pass
+                decks_list.append({"name": dname, "filtered": is_dyn})
+            return sorted(decks_list, key=lambda x: x["name"])
+        db_rows = mw.col.db.all("SELECT id, name FROM decks")
+        decks_list = []
+        for r in db_rows:
+            if not r[1]:
+                continue
+            dname = r[1].replace("\x1f", "::")
+            is_dyn = False
+            try:
+                if hasattr(mw.col.decks, "is_filtered"):
+                    is_dyn = mw.col.decks.is_filtered(r[0])
+            except Exception:
+                pass
+            decks_list.append({"name": dname, "filtered": is_dyn})
+        return sorted(decks_list, key=lambda x: x["name"])
+    except Exception:
+        return []
+
+
+def get_target_deck_ids(deck_choice="__AUTO__"):
+    """
+    Returns a set of deck IDs based on deck_choice.
+    - If deck_choice is '__ALL__': returns None (no filter -> entire collection).
+    - If deck_choice is '__AUTO__' or empty/None: looks for 'Anki EDN'. If found, returns its IDs. If not found, returns None.
+    - If deck_choice is a specific deck name: looks for that exact deck and subdecks. If found, returns its IDs. If not found, returns None.
+    """
+    try:
+        if not hasattr(mw, "col") or mw.col is None:
+            return None
+        
+        if not deck_choice or deck_choice == "__AUTO__":
+            target_name = "Anki EDN"
+        elif deck_choice == "__ALL__":
+            return None
+        else:
+            target_name = str(deck_choice).strip()
+
+        target_norm = target_name.lower().replace("\x1f", "::")
+        if hasattr(mw.col, "decks"):
+            if hasattr(mw.col.decks, "all_names_and_ids"):
+                matched = {
+                    d.id for d in mw.col.decks.all_names_and_ids()
+                    if d.name.lower().replace("\x1f", "::") == target_norm or d.name.lower().replace("\x1f", "::").startswith(target_norm + "::")
+                }
+                if matched:
+                    return matched
+            elif hasattr(mw.col.decks, "all"):
+                matched = {
+                    d['id'] for d in mw.col.decks.all()
+                    if d.get('name', '').lower().replace("\x1f", "::") == target_norm or d.get('name', '').lower().replace("\x1f", "::").startswith(target_norm + "::")
+                }
+                if matched:
+                    return matched
+
+        db_rows = mw.col.db.all("SELECT id, name FROM decks")
+        matched = {
+            row[0] for row in db_rows
+            if row[1].lower().replace("\x1f", "::") == target_norm or row[1].lower().replace("\x1f", "::").startswith(target_norm + "::")
+        }
+        if matched:
+            return matched
+    except Exception as e:
+        log(f"get_target_deck_ids error: {e}")
+    return None
+
+
+def cards_of_note(note, target_deck_ids=None):
     try:
         c = note.cards()
         if isinstance(c, list):
+            if target_deck_ids is not None:
+                return [card for card in c if getattr(card, 'did', None) in target_deck_ids]
             return c
     except Exception:
         pass
     try:
         cids = mw.col.find_cards(f"nid:{note.id}")
-        return [mw.col.get_card(cid) for cid in cids]
+        cards = [mw.col.get_card(cid) for cid in cids]
+        if target_deck_ids is not None:
+            return [card for card in cards if getattr(card, 'did', None) in target_deck_ids]
+        return cards
+    except Exception:
+        return []
+    try:
+        cids = mw.col.find_cards(f"nid:{note.id}")
+        cards = [mw.col.get_card(cid) for cid in cids]
+        if target_deck_ids is not None:
+            return [card for card in cards if getattr(card, 'did', None) in target_deck_ids]
+        return cards
     except Exception:
         return []
 
@@ -168,7 +298,7 @@ def compute_item_difficulty_for_cards(card_objs, window_days=30, weights=(0.6,0.
 
     return 0.0, {}
 
-def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None, mature_ivl=21, subject_filter=None, exclude_pediatric=False):
+def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None, mature_ivl=21, subject_filter=None, exclude_pediatric=False, excluded_tags=None):
     # User requested: "Quand les enfants ne sont pas inclus, les tags doivent inclure leurs enfants"
     # This implies that the stats for 'EDN::item-005' MUST include 'EDN::item-005::Child'.
     # Anki's search `tag:foo` AUTOMATICALLY includes `tag:foo::bar`. 
@@ -209,6 +339,7 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
     
     # Pre-process subject filter for fast checking
     filter_roots = [s.lower() for s in (subject_filter or [])]
+    excluded_set = _normalize_excluded_tags(excluded_tags, exclude_pediatric)
 
     for nid in nids:
         try:
@@ -219,11 +350,9 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
         # note tag-based rang filter
         ntags_lower = [t.lower().replace('-', '::').replace('_', '::') for t in (note.tags or [])]
         
-        # Pediatric exclusion
-        if exclude_pediatric:
-            if any(t == "pédiatrie" or t.startswith("pédiatrie::") or "::pédiatrie" in t or
-                   t == "pediatrie" or t.startswith("pediatrie::") or "::pediatrie" in t for t in ntags_lower):
-                continue
+        # Tag exclusion (including pediatric)
+        if excluded_set and _is_note_excluded(ntags_lower, excluded_set):
+            continue
         
         if only_rang:
             if not any(t.endswith(f'::{only_rang.lower()}') or t==f'rang::{only_rang.lower()}' for t in ntags_lower):
@@ -419,7 +548,7 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
     return result
 
 @perf_log
-def collect_overview(mode='items', only_rang=None, exclude_rang=None, include_children=False, subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, window_days=30, mature_ivl=21, subject_blacklist=None, subject_filter=None, overlap_threshold=0.15, crit_threshold=0.8, exclude_pediatric=False):
+def collect_overview(mode='items', only_rang=None, exclude_rang=None, include_children=False, subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, window_days=30, mature_ivl=21, subject_blacklist=None, subject_filter=None, overlap_threshold=0.15, crit_threshold=0.8, exclude_pediatric=False, selected_deck='__AUTO__', excluded_tags=None):
     # Use batch SQL optimization (activated in production)
     return collect_overview_batch(
         mode=mode, only_rang=only_rang, exclude_rang=exclude_rang,
@@ -427,11 +556,12 @@ def collect_overview(mode='items', only_rang=None, exclude_rang=None, include_ch
         suspend_mask_threshold=suspend_mask_threshold, window_days=window_days,
         mature_ivl=mature_ivl, subject_blacklist=subject_blacklist,
         subject_filter=subject_filter, overlap_threshold=overlap_threshold,
-        crit_threshold=crit_threshold, exclude_pediatric=exclude_pediatric
+        crit_threshold=crit_threshold, exclude_pediatric=exclude_pediatric,
+        selected_deck=selected_deck, excluded_tags=excluded_tags
     )
 
 
-def _collect_overview_original(mode='items', only_rang=None, exclude_rang=None, include_children=False, subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, window_days=30, mature_ivl=21, subject_blacklist=None, subject_filter=None, overlap_threshold=0.15, crit_threshold=0.8, exclude_pediatric=False):
+def _collect_overview_original(mode='items', only_rang=None, exclude_rang=None, include_children=False, subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, window_days=30, mature_ivl=21, subject_blacklist=None, subject_filter=None, overlap_threshold=0.15, crit_threshold=0.8, exclude_pediatric=False, selected_deck='__AUTO__', excluded_tags=None):
     """Original implementation (kept for reference/fallback)."""
     if mode == 'items':
         units = _all_item_tags()
@@ -621,7 +751,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
                           subject_tags=None, suspend_mask_threshold=SUSPEND_MASK_THRESHOLD, 
                           window_days=30, mature_ivl=21, subject_blacklist=None, 
                           subject_filter=None, overlap_threshold=0.15, crit_threshold=0.8,
-                          exclude_pediatric=False):
+                          exclude_pediatric=False, selected_deck='__AUTO__', excluded_tags=None):
     """
     Batch SQL version of collect_overview.
     Loads all cards in ONE query, then processes in memory.
@@ -651,15 +781,26 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     # ========== SINGLE SQL QUERY ==========
     sql_start = time.time()
     
-    # Build SQL to get all cards with note info
-    # Note: n.tags is space-separated string
-    rows = mw.col.db.all("""
-        SELECT 
-            c.id as cid, c.nid, c.type, c.queue, c.ivl,
-            n.tags
-        FROM cards c
-        JOIN notes n ON c.nid = n.id
-    """)
+    # Build SQL to get cards with note info (scoped to target deck if specified)
+    target_deck_ids = get_target_deck_ids(selected_deck)
+    if target_deck_ids:
+        dids_str = ",".join(str(int(did)) for did in target_deck_ids)
+        rows = mw.col.db.all(f"""
+            SELECT 
+                c.id as cid, c.nid, c.type, c.queue, c.ivl,
+                n.tags
+            FROM cards c
+            JOIN notes n ON c.nid = n.id
+            WHERE c.did IN ({dids_str})
+        """)
+    else:
+        rows = mw.col.db.all("""
+            SELECT 
+                c.id as cid, c.nid, c.type, c.queue, c.ivl,
+                n.tags
+            FROM cards c
+            JOIN notes n ON c.nid = n.id
+        """)
     
     sql_time = time.time() - sql_start
     
@@ -692,6 +833,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     
     # Prepare subject filter roots for overlap check
     filter_roots = [s.lower() for s in (subject_filter or [])]
+    excluded_set = _normalize_excluded_tags(excluded_tags, exclude_pediatric)
     
     # Prepare rang filters
     only_rang_lower = only_rang.lower() if only_rang else None
@@ -719,11 +861,9 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
         note_tags = tags_str.split()
         note_tags_lower = [t.lower() for t in note_tags]
         
-        # Apply pediatric exclusion
-        if exclude_pediatric:
-            if any(t == "pédiatrie" or t.startswith("pédiatrie::") or "::pédiatrie" in t or
-                   t == "pediatrie" or t.startswith("pediatrie::") or "::pediatrie" in t for t in note_tags_lower):
-                continue
+        # Apply tag exclusion (including pediatric)
+        if excluded_set and _is_note_excluded(note_tags_lower, excluded_set):
+            continue
         
         # Apply rang filters
         if only_rang_lower:
@@ -984,6 +1124,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     
     # Build meta
     all_subjects = _all_subject_tags(blacklist=subject_blacklist)
+    all_decks = _get_all_available_decks()
     mastery_list = [it['mastery'] for it in items if it.get('total', 0) > 0]
     difficulty_list = [it['difficulty'] for it in items if it.get('total', 0) > 0]
     desuspended_count = sum(1 for it in items if it.get('total', 0) > 0 and (1 - it['percent'].get('suspended', 0.0)) > DESUSPENDED_THRESHOLD)
@@ -998,6 +1139,8 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
         'num_critical_items': critical_count,
         'total_units': len(items),
         'available_subjects': all_subjects,
+        'available_decks': all_decks,
+        'selected_deck': selected_deck,
         '_batch_timing': {
             'sql': sql_time,
             'process': process_time,
@@ -1010,7 +1153,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     return {'mode': mode, 'items': items_sorted, 'meta': meta}
 
 
-def collect_history_and_forecast(window_days=90, forecast_days=30):
+def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck='__AUTO__'):
     sched = mw.col.sched
     try:
         today_cutoff = sched.day_cutoff
@@ -1025,8 +1168,48 @@ def collect_history_and_forecast(window_days=90, forecast_days=30):
     # cutoff timestamp in milliseconds
     cutoff_ts_ms = (today_cutoff - window_days * 86400) * 1000
     
+    target_deck_ids = get_target_deck_ids(selected_deck)
+    
     # 1. Query cards info
-    cards_rows = mw.col.db.all("SELECT id, queue, type, ivl, due FROM cards")
+    if target_deck_ids:
+        dids_str = ",".join(str(int(did)) for did in target_deck_ids)
+        cards_rows = mw.col.db.all(f"SELECT id, queue, type, ivl, due FROM cards WHERE did IN ({dids_str})")
+        rev_rows = mw.col.db.all(f"""
+            SELECT revlog.cid as cid, revlog.id as id, revlog.ivl as ivl, revlog.ease as ease, revlog.type as type, revlog.time as time
+            FROM revlog
+            JOIN cards ON revlog.cid = cards.id
+            WHERE cards.did IN ({dids_str}) AND revlog.id >= ?
+            UNION ALL
+            SELECT revlog.cid as cid, revlog.id as id, revlog.ivl as ivl, revlog.ease as ease, revlog.type as type, revlog.time as time
+            FROM revlog
+            JOIN cards ON revlog.cid = cards.id
+            WHERE cards.did IN ({dids_str}) AND revlog.id IN (
+                SELECT MAX(r2.id)
+                FROM revlog r2
+                JOIN cards c2 ON r2.cid = c2.id
+                WHERE c2.did IN ({dids_str}) AND r2.id < ?
+                GROUP BY r2.cid
+            )
+            ORDER BY 1, 2 ASC
+        """, cutoff_ts_ms, cutoff_ts_ms)
+    else:
+        cards_rows = mw.col.db.all("SELECT id, queue, type, ivl, due FROM cards")
+        rev_rows = mw.col.db.all("""
+            SELECT cid as cid, id as id, ivl as ivl, ease as ease, type as type, time as time
+            FROM revlog
+            WHERE id >= ?
+            UNION ALL
+            SELECT cid as cid, id as id, ivl as ivl, ease as ease, type as type, time as time
+            FROM revlog
+            WHERE id IN (
+                SELECT MAX(id)
+                FROM revlog
+                WHERE id < ?
+                GROUP BY cid
+            )
+            ORDER BY 1, 2 ASC
+        """, cutoff_ts_ms, cutoff_ts_ms)
+    
     cards_info = {}
     for cid, queue, typ, ivl, due in cards_rows:
         cards_info[cid] = {
@@ -1036,23 +1219,6 @@ def collect_history_and_forecast(window_days=90, forecast_days=30):
             'due': due
         }
         
-    # 2. Query revlog entries
-    rev_rows = mw.col.db.all("""
-        SELECT cid, id, ivl, ease, type, time
-        FROM revlog
-        WHERE id >= ?
-        UNION ALL
-        SELECT cid, id, ivl, ease, type, time
-        FROM revlog
-        WHERE id IN (
-            SELECT MAX(id)
-            FROM revlog
-            WHERE id < ?
-            GROUP BY cid
-        )
-        ORDER BY cid, id ASC
-    """, cutoff_ts_ms, cutoff_ts_ms)
-    
     reviews_by_card = {}
     for cid, r_id, ivl, ease, typ, study_time in rev_rows:
         if cid not in reviews_by_card:
@@ -1118,8 +1284,9 @@ def collect_history_and_forecast(window_days=90, forecast_days=30):
     def fill_overdue(s_idx, e_idx):
         s = max(0, s_idx)
         e = min(W - 1, e_idx)
-        for idx in range(s, e + 1):
-            history_overdue[idx] += 1
+        if s <= e:
+            for idx in range(s, e + 1):
+                history_overdue[idx] += 1
             
     # Process timelines for all cards
     for cid, c_info in cards_info.items():
@@ -1133,6 +1300,11 @@ def collect_history_and_forecast(window_days=90, forecast_days=30):
                 fill_state('new', 0, W - 1)
             else:
                 fill_state('learning', 0, W - 1)
+                if current_queue == 2 and c_info['due'] <= today_day:
+                    idx_due = (W - 1) + (c_info['due'] - today_day)
+                    fill_overdue(idx_due, W - 1)
+                elif current_queue in (1, 3):
+                    fill_overdue(0, W - 1)
         else:
             first_r_ts = revs[0][0]
             first_idx = ts_to_idx(first_r_ts)
@@ -1163,8 +1335,7 @@ def collect_history_and_forecast(window_days=90, forecast_days=30):
                     due_ts = r_ts + r_ivl * 86400000
                     idx_due = ts_to_idx(due_ts)
                     # Card is overdue if it was due before the next actual review
-                    # AND within our window
-                    if idx_due < idx_next and idx_due >= 0:
+                    if idx_due < idx_next:
                         fill_overdue(idx_due, min(idx_next - 1, W - 1))
                     
             last_r_ts = revs[-1][0]
@@ -1183,13 +1354,14 @@ def collect_history_and_forecast(window_days=90, forecast_days=30):
                 fill_state('suspended', idx_last + 1, W - 1)
             else:
                 fill_state(S_n, idx_last, W - 1)
-                # Only compute overdue for actual review cards (positive ivl in days)
-                # Negative ivl = learning steps (seconds), 0 = new → no meaningful overdue
+                # Compute overdue for cards currently active
                 if last_r_ivl > 0:
                     due_ts = last_r_ts + last_r_ivl * 86400000
                     idx_due = ts_to_idx(due_ts)
-                    if 0 <= idx_due <= W - 1:
+                    if idx_due <= W - 1:
                         fill_overdue(idx_due, W - 1)
+                elif current_queue in (1, 3):
+                    fill_overdue(idx_last + 1, W - 1)
 
     # 3. Future scheduled due cards
     scheduled_due = [0] * forecast_days
@@ -1277,12 +1449,12 @@ def collect_history_and_forecast(window_days=90, forecast_days=30):
     import datetime
     history_dates = []
     for offset in range(-window_days + 1, 1):
-        dt = datetime.datetime.fromtimestamp(today_cutoff + offset * 86400)
+        dt = datetime.datetime.fromtimestamp(today_cutoff + offset * 86400 - 86400)
         history_dates.append(dt.strftime("%d/%m"))
         
     forecast_dates = []
     for offset in range(forecast_days):
-        dt = datetime.datetime.fromtimestamp(today_cutoff + offset * 86400)
+        dt = datetime.datetime.fromtimestamp(today_cutoff + offset * 86400 - 86400)
         forecast_dates.append(dt.strftime("%d/%m"))
 
     return {

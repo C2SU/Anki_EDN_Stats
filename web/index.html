@@ -6,23 +6,39 @@
   <title>EDN Stat — Statistiques</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="style.css">
+  <script src="i18n.js"></script>
   <script src="chart.umd.min.js"></script>
 </head>
 
 <body>
   <header>
     <style>
-      /* Inline override for specific requests */
+      /* Modern EDN Items Grid & Card Styling - Sober Medical/Anki Theme */
+      #pages {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+
       .modern-card {
         cursor: pointer !important;
         user-select: none;
-        border: 1px solid #ccc;
-        transition: all 0.2s ease;
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 12px 14px;
+        transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        position: relative;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
 
       .modern-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.09);
         border-color: #2c7bb6;
       }
 
@@ -30,32 +46,47 @@
         transform: scale(0.99);
       }
 
-      .card-title {
-        font-weight: 600 !important;
-        font-size: 1.2em;
-        text-align: center;
-        margin-bottom: 12px;
-        border-bottom: 2px solid #f0f0f0;
-        padding-bottom: 8px;
-        padding-top: 12px;
+      .card-header-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-right: 22px;
       }
 
-      .modern-card {
-        position: relative;
+      .card-num-badge {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #f0f4f8;
+        color: #2c7bb6;
+        border: 1px solid #d0dbe5;
+        flex-shrink: 0;
+      }
+
+      .card-title-text {
+        font-weight: 600;
+        font-size: 13.5px;
+        color: #222;
+        line-height: 1.35;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .exclude-btn {
         position: absolute;
-        top: 2px;
-        right: 2px;
-        background: rgba(150, 60, 60, 0.6);
-        color: white;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        color: #999;
         border: none;
-        border-radius: 50%;
-        width: 14px;
-        height: 14px;
+        border-radius: 4px;
+        width: 20px;
+        height: 20px;
         cursor: pointer;
-        font-size: 10px;
+        font-size: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -63,18 +94,130 @@
         padding: 0;
         margin: 0;
         opacity: 0.5;
-        transition: opacity 0.2s, background 0.2s;
+        transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
       }
 
       .exclude-btn::before {
         content: '✕';
-        position: relative;
-        top: -1px;
       }
 
       .exclude-btn:hover {
-        background: #c62828;
+        background: #ffebee;
+        color: #c62828;
         opacity: 1;
+      }
+
+      /* Progress Bar Section */
+      .card-progress-section {
+        background: #f9fbfd;
+        border: 1px solid #e8ecf1;
+        border-radius: 6px;
+        padding: 7px 9px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .card-progress-labels {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: #555;
+      }
+
+      .card-progress-track {
+        width: 100%;
+        background: #e4e7eb;
+        border-radius: 4px;
+        height: 6px;
+        overflow: hidden;
+      }
+
+      .card-progress-bar {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.25s ease;
+      }
+
+      .card-progress-sub {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        color: #666;
+      }
+
+      .card-progress-sub strong {
+        color: #333;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+      }
+
+      /* Metrics Grid */
+      .card-metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
+      .metric-box {
+        background: #f9fbfd;
+        border: 1px solid #e8ecf1;
+        border-radius: 6px;
+        padding: 5px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .metric-box-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #666;
+      }
+
+      .metric-box-val {
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .metric-badge-pill {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+
+      /* Pill colors */
+      .badge-diff-easy {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #c8e6c9;
+      }
+      .badge-diff-mid {
+        background: #fff8e1;
+        color: #f57f17;
+        border: 1px solid #ffecb3;
+      }
+      .badge-diff-hard {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #ffcdd2;
+      }
+
+      /* Sober Header Bar */
+      .edn-list-header {
+        background: #2c7bb6;
+        color: white;
+        border-radius: 6px;
+        padding: 8px 14px;
+        margin-top: 25px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
 
       .add-item-btn {
@@ -88,49 +231,188 @@
         font-size: 16px;
         font-weight: bold;
         line-height: 24px;
-        padding: 0;
-        margin-left: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease;
       }
 
       .add-item-btn:hover {
         background: #388e3c;
       }
 
-      /* Fix text overflow in cards */
-      .modern-card .card-title {
-        word-break: break-word;
-        overflow-wrap: break-word;
+      /* Search & Sort Container */
+      .sort-controls {
+        background: #f8f9fa;
+        border: 1px solid #e2e4e7;
+        border-radius: 6px;
+        padding: 6px 10px;
+        margin-bottom: 14px;
       }
 
-      .modern-card>div {
-        font-size: 13px;
+      .item-search-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        flex: 1;
+        min-width: 170px;
+        max-width: 260px;
       }
 
-      /* Dark mode overrides */
+      .item-search-input {
+        width: 100%;
+        padding: 5px 8px 5px 28px;
+        font-size: 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #333;
+        outline: none;
+        transition: border-color 0.15s ease;
+      }
+
+      .item-search-input:focus {
+        border-color: #2c7bb6;
+      }
+
+      .item-search-icon {
+        position: absolute;
+        left: 8px;
+        font-size: 11px;
+        color: #888;
+        pointer-events: none;
+      }
+
+      .sort-controls button {
+        background: #ffffff;
+        color: #555;
+        border: 1px solid #ccc;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .sort-controls button:hover {
+        background: #f0f0f0;
+        color: #222;
+      }
+
+      .sort-controls button.active-sort {
+        background: #2c7bb6;
+        color: #ffffff;
+        border-color: #2c7bb6;
+      }
+
+      /* Native Dark Mode Adjustments (Sober Anki Dark Palette) */
       body.nightMode .modern-card {
-        border-color: #444;
-        background: #3a3a3a;
+        background: #2f2f31;
+        border-color: #424245;
+        color: #e0e0e0;
+        box-shadow: none;
       }
 
       body.nightMode .modern-card:hover {
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        background: #353538;
+        border-color: #64b5f6;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      body.nightMode .card-num-badge {
+        background: #3a3a3d;
+        color: #90caf9;
+        border-color: #4f4f54;
+      }
+
+      body.nightMode .card-title-text {
+        color: #ffffff;
+      }
+
+      body.nightMode .exclude-btn {
+        color: #888;
+      }
+
+      body.nightMode .exclude-btn:hover {
+        background: #5c2828;
+        color: #ef9a9a;
+      }
+
+      body.nightMode .card-progress-section,
+      body.nightMode .metric-box {
+        background: #262628;
+        border-color: #38383a;
+      }
+
+      body.nightMode .card-progress-labels,
+      body.nightMode .card-progress-sub,
+      body.nightMode .metric-box-label {
+        color: #aaa;
+      }
+
+      body.nightMode .card-progress-sub strong {
+        color: #ddd;
+      }
+
+      body.nightMode .card-progress-track {
+        background: #1e1e20;
+      }
+
+      body.nightMode .badge-diff-easy {
+        background: #1e3320;
+        color: #81c784;
+        border-color: #2e5432;
+      }
+
+      body.nightMode .badge-diff-mid {
+        background: #3e3318;
+        color: #ffb74d;
+        border-color: #5c4a1e;
+      }
+
+      body.nightMode .badge-diff-hard {
+        background: #3e1e1e;
+        color: #e57373;
+        border-color: #5c2828;
+      }
+
+      body.nightMode .edn-list-header {
+        background: #252528;
+        border: 1px solid #3e3e42;
+      }
+
+      body.nightMode .sort-controls {
+        background: #252528;
+        border-color: #3e3e42;
+      }
+
+      body.nightMode .item-search-input {
+        background: #1c1c1e;
+        border-color: #48484c;
+        color: #e0e0e0;
+      }
+
+      body.nightMode .item-search-input:focus {
         border-color: #64b5f6;
       }
 
-      body.nightMode .card-title {
-        border-bottom-color: #555;
+      body.nightMode .sort-controls button {
+        background: #2e2e31;
+        color: #ccc;
+        border-color: #454549;
+      }
+
+      body.nightMode .sort-controls button:hover {
+        background: #38383c;
         color: #fff;
+        border-color: #555;
       }
 
-      /* Sort Button feedback */
-      .sort-controls button {
-        padding: 6px 12px;
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      .sort-controls button:active {
-        background: #ddd;
+      body.nightMode .sort-controls button.active-sort {
+        background: #1976d2;
+        color: #fff;
+        border-color: #1565c0;
       }
 
       /* Custom Dropdown for Subjects */
@@ -186,6 +468,16 @@
         padding: 2px 6px;
         border-radius: 4px;
         margin-left: auto;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.1s ease;
+      }
+      #subjectCheckboxList > div:hover .uniquement-btn,
+      #subjectList label:hover .uniquement-btn-dropdown,
+      #excludedTagsCheckboxList > div:hover .uniquement-btn,
+      #excludedTagsList label:hover .uniquement-btn-dropdown {
+        opacity: 1;
+        visibility: visible;
       }
       .uniquement-btn:hover, .uniquement-btn-dropdown:hover {
         background: #e3f2fd;
@@ -265,7 +557,6 @@
         font-weight: 500;
         cursor: pointer;
         color: inherit;
-        user-select: none;
       }
 
       .control-group select {
@@ -355,65 +646,60 @@
       body.nightMode #exportCsv:hover {
         background: #1e40af !important;
       }
-
-      #settingsBtn {
-        width: 32px;
-        padding: 0;
-        background: none;
-        border: 1px solid rgba(0, 0, 0, 0.15);
-        color: #555;
-      }
-
-      #settingsBtn:hover {
-        background: rgba(0, 0, 0, 0.05);
-      }
-
-      body.nightMode #settingsBtn {
-        border-color: rgba(255, 255, 255, 0.2) !important;
-        color: #ccc !important;
-      }
-
-      body.nightMode #settingsBtn:hover {
-        background: rgba(255, 255, 255, 0.05);
-      }
     </style>
-    <div class="tabs" style="margin: 10px 0 12px 0;">
-      <button class="tab active" id="tabOverview">📊 Vue d'ensemble</button>
-      <button class="tab" id="tabHistory">📈 Historique & Prévisions</button>
+    <div class="header-nav-bar">
+      <div class="tabs">
+        <button class="tab active" id="tabOverview" data-i18n="tab_overview">Vue d'ensemble</button>
+        <button class="tab" id="tabHistory" data-i18n="tab_history">Révisions Stats</button>
+      </div>
+      <button id="settingsBtn" class="settings-gear-btn" title="Réglages & Paramètres" data-i18n-title="settings_btn_title">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
     </div>
     <div class="top-controls">
       <!-- Group 1: Scope & Rang -->
       <div class="control-group">
-        <label>Afficher : 
+        <label><span data-i18n="lbl_show">Afficher :</span>
           <select id="scopeSelect">
-            <option value="items">Items</option>
-            <option value="sdd">SDD</option>
-            <option value="subject">Matières</option>
+            <option value="items" data-i18n="opt_items">Items</option>
+            <option value="sdd" data-i18n="opt_sdd">SDD</option>
+            <option value="subject" data-i18n="opt_subjects">Matières</option>
           </select>
         </label>
-        <label>Rang : 
+        <label><span data-i18n="lbl_rank">Rang :</span>
           <select id="rangMode">
-            <option value="all">Tous</option>
-            <option value="onlyA">Rang A</option>
-            <option value="notA">Hors A</option>
+            <option value="all" data-i18n="opt_all">Tous</option>
+            <option value="onlyA" data-i18n="opt_rank_a">Rang A</option>
+            <option value="notA" data-i18n="opt_not_a">Hors A</option>
           </select>
         </label>
       </div>
 
-      <!-- Group 2: Inclusion Checkboxes -->
+      <!-- Group 2: Inclusion & Excluded Tags Dropdown -->
       <div class="control-group">
-        <label><input id="includeChildren" type="checkbox"> Inclure enfants</label>
-        <label><input id="excludePediatric" type="checkbox"> Exclure Pédiatrie</label>
+        <label><input id="includeChildren" type="checkbox"> <span data-i18n="lbl_include_children">Inclure enfants</span></label>
+      </div>
+
+      <div class="control-group" id="excludedTagsFilterGroup">
+        <div class="custom-dropdown" id="excludedTagsDropdown">
+          <div class="dropdown-trigger" id="excludedTagsTrigger" data-i18n="lbl_excluded_tags_trigger">Tags exclus</div>
+          <div class="dropdown-content" id="excludedTagsList">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
       </div>
 
       <!-- Group 3: Subjects Filter (Grouped with dropdown to wrap together) -->
       <div class="control-group" id="subjectFilterGroup">
         <span id="filterBySubjectContainer">
-          <label><input id="filterBySubject" type="checkbox"> Par matières</label>
+          <label><input id="filterBySubject" type="checkbox"> <span data-i18n="lbl_by_subjects">Par matières</span></label>
         </span>
         <div id="subjectFilterLabel" style="display:none; margin-left: 4px;">
           <div class="custom-dropdown" id="subjectDropdown">
-            <div class="dropdown-trigger" id="subjectTrigger">Matières (Tout)</div>
+            <div class="dropdown-trigger" id="subjectTrigger" data-i18n="lbl_subjects_all">Matières (Tout)</div>
             <div class="dropdown-content" id="subjectList">
               <!-- Populated dynamically -->
             </div>
@@ -423,183 +709,292 @@
 
       <div class="control-divider"></div>
 
-      <!-- Group 4: Chart Metric -->
-      <div class="control-group">
-        <label>Graphique :
-          <select id="chartMetric">
-            <option value="mastery">Maîtrise</option>
-            <option value="difficulty">Difficulté</option>
-            <option value="studied_ratio">Ratio Appris/Désuspendu</option>
-            <option value="studied_total_ratio">Ratio Appris/Total</option>
-            <option value="unsuspended_share">Part Désuspendue</option>
-          </select>
-        </label>
-        <span class="help-icon" id="helpIcon" style="cursor:pointer; font-size:16px; margin-left:6px; display:none;">ⓘ</span>
-      </div>
-
       <!-- Group 5: Actions -->
       <div class="control-group actions-group">
-        <button id="applyBtn">Appliquer</button>
-        <button id="exportCsv">CSV</button>
-        <button id="settingsBtn" title="Paramètres">⚙️</button>
+        <button id="applyBtn" data-i18n="btn_apply">Appliquer</button>
+        <button id="exportCsv" data-i18n="btn_csv">CSV</button>
       </div>
     </div>
   </header>
 
   <!-- Settings Modal -->
-  <div id="settingsModal"
-    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
-    <div
-      style="background:#fff; color:#000; padding:20px; border-radius:12px; width:550px; max-height:95vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-      <h3 style="margin-top:0; border-bottom:0px solid #eee; padding-bottom:0px; margin-bottom:0px; font-size:0em;">
-        Paramètres</h3>
-
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-
-        <!-- Column 1: Thresholds & Colors -->
+  <div id="settingsModal" class="settings-modal-overlay">
+    <div class="settings-modal-dialog">
+      <!-- Modal Header -->
+      <div class="settings-modal-header">
         <div>
-          <h4 style="margin:0 0 10px 0; color:#2c7bb6; border-bottom:1px solid #eee; padding-bottom:5px;">Seuils de
-            Couleurs</h4>
-
-          <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Seuil Maîtrise ("Bon" si > %)</span>
-            <input type="number" id="colorThMastery" value="0.7" step="0.05" min="0" max="1"
-              style="width:100%; padding:6px; box-sizing:border-box;">
-          </label>
-
-          <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Ratio Appris/Désuspendu ("Bon" si > %)</span>
-            <input type="number" id="colorThRatio" value="0.7" step="0.05" min="0" max="1"
-              style="width:100%; padding:6px; box-sizing:border-box;">
-          </label>
-
-          <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Ratio Appris/Total ("Bon" si > %)</span>
-            <input type="number" id="colorThTotalRatio" value="0.6" step="0.05" min="0" max="1"
-              style="width:100%; padding:6px; box-sizing:border-box;">
-          </label>
-
-          <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Seuil Critique Difficulté</span>
-            <input type="number" id="critThresholdInput" value="0.8" step="0.05" min="0" max="1"
-              style="width:100%; padding:6px; box-sizing:border-box;">
-            <small style="color:#666; display:block;">Marqué critique si > ce seuil</small>
-          </label>
+          <h3 class="settings-modal-title" data-i18n="settings_title">Réglages & Paramètres</h3>
+          <p class="settings-modal-subtitle" data-i18n="settings_subtitle">Configurez la source de données, les filtres d'affichage et les seuils visuels.</p>
         </div>
+        <button type="button" class="settings-modal-close-btn" id="settingsCloseXBtn" title="Fermer">✕</button>
+      </div>
 
-        <!-- Column 2: Analysis & Filtering -->
-        <div>
-          <h4 style="margin:0 0 10px 0; color:#2c7bb6; border-bottom:1px solid #eee; padding-bottom:5px;">Analyse &
-            Filtres</h4>
+      <!-- Navigation Tabs (2 Clean Tabs) -->
+      <div class="settings-modal-tabs">
+        <button type="button" class="settings-modal-tab-btn active" data-settings-tab="tabSettingsGlobal" data-i18n="settings_tab_general">Général</button>
+        <button type="button" class="settings-modal-tab-btn" data-settings-tab="tabSettingsOverview" data-i18n="settings_tab_overview">Vue d'ensemble</button>
+      </div>
 
-          <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Fenêtre d'analyse (Jours)</span>
-            <input type="number" id="windowDaysInput" value="1000"
-              style="width:100%; padding:6px; box-sizing:border-box;">
-          </label>
-
-          <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Seuil Maîtrise (Jours)</span>
-            <input type="number" id="matureIvlInput" value="21" style="width:100%; padding:6px; box-sizing:border-box;">
-            <small style="color:#666; display:block;">IVL min pour être "Mature"</small>
-          </label>
-
-          <label style="display:block; margin-bottom:8px;">
-            <span style="font-weight:600;">Seuil recoupement Matière</span>
-            <input type="number" id="subjectOverlapThreshold" value="0.15" step="0.01" min="0" max="1"
-              style="width:100%; padding:6px; box-sizing:border-box;">
-            <small style="color:#666; display:block;">Ratio min de cartes avec tag matière (0-1)</small>
-          </label>
-
-          <div style="margin-top:10px;">
-            <span style="font-weight:600; display:block; margin-bottom:5px;">Masquer si Suspendu > N%</span>
-            <div style="display:flex; gap:10px;">
-              <label style="font-size:12px;">Items <input type="number" id="threshItemsInput" value="0.4" step="0.1"
-                  style="width:40px;"></label>
-              <label style="font-size:12px;">SDD <input type="number" id="threshSddInput" value="0.5" step="0.1"
-                  style="width:40px;"></label>
-              <label style="font-size:12px;">Mat. <input type="number" id="threshSubjInput" value="0.4" step="0.1"
-                  style="width:40px;"></label>
+      <!-- Modal Body -->
+      <div class="settings-modal-body">
+        
+        <!-- Tab 1: Global (Paquet / Deck uniquement) -->
+        <div class="settings-tab-pane active" id="tabSettingsGlobal">
+          <div class="settings-card-group">
+            <h4 class="settings-group-header" data-i18n="hdr_deck">Paquet exploré (Deck)</h4>
+            <div class="settings-field-row">
+              <select id="selectedDeckSelect" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #cbd5e0; font-size:13px;">
+                <option value="__AUTO__" data-i18n="opt_deck_auto">Auto (Anki EDN si présent)</option>
+                <option value="__ALL__" data-i18n="opt_deck_all">Toute la collection</option>
+              </select>
+              <p class="settings-field-hint" data-i18n="hint_deck">Définit le paquet source analysé pour <strong>l'ensemble des statistiques</strong> (Vue d'ensemble et Révisions Stats).</p>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Subject Management Section remains -->
+        <!-- Tab 2: Vue d'ensemble (Critères, Masquage, Recoupement, Couleurs, Difficulté, Tags exclus, Matières) -->
+        <div class="settings-tab-pane" id="tabSettingsOverview">
+          <div class="settings-card-group">
+            <h4 class="settings-group-header" data-i18n="hdr_history_criteria">Historique & Critère de Maîtrise</h4>
+            
+            <div class="settings-field-row">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_window_days">Fenêtre d'analyse historique</span>
+                <span class="settings-field-badge" id="badgeWindowDays">1000 j</span>
+              </div>
+              <input type="number" id="windowDaysInput" value="1000" min="1" max="5000" style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e0; font-size:13px; box-sizing:border-box;">
+              <p class="settings-field-hint" data-i18n="hint_window_days">Nombre de jours d'historique de révisions pris en compte pour calculer le taux d'échec et la difficulté.</p>
+              <div class="settings-chips-row">
+                <button type="button" class="settings-chip-btn" data-set-window="90">90 j</button>
+                <button type="button" class="settings-chip-btn" data-set-window="180">180 j</button>
+                <button type="button" class="settings-chip-btn" data-set-window="365">1 an (365 j)</button>
+                <button type="button" class="settings-chip-btn" data-set-window="1000">Tout (1000 j)</button>
+              </div>
+            </div>
 
-      <!-- NEW: Subject Management Section -->
-      <div style="margin-top:20px;">
-        <h4 style="margin:0 0 10px 0; color:#2c7bb6; border-bottom:1px solid #eee; padding-bottom:5px;">
-          Gestion des Matières affichées
-        </h4>
-        <small style="color:#666; display:block; margin-bottom:8px;">
-          Les matières cochées seront affichées en mode "Matières".<br>
-          Par défaut, toutes sont cochées. Décochez pour masquer certaines matières.
-        </small>
+            <div class="settings-field-row" style="margin-top:8px;">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_mature_ivl">Seuil carte maîtrisée ("Mature")</span>
+                <span class="settings-field-badge" id="badgeMatureIvl">21 j</span>
+              </div>
+              <input type="number" id="matureIvlInput" value="21" min="1" max="365" style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e0; font-size:13px; box-sizing:border-box;">
+              <p class="settings-field-hint" data-i18n="hint_mature_ivl">Intervalle minimum (IVL en jours) à partir duquel une carte est considérée comme acquise/consolidée.</p>
+            </div>
+          </div>
 
-        <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-          <label>
-            <input type="checkbox" id="showSubjectChildren"> Afficher enfants des matières
-          </label>
-          <div>
-            <button type="button" id="selectStandardSubjects"
-              style="font-size:11px; padding:4px 8px; background:#1565c0; color:white; border:1px solid #0d47a1; border-radius:4px; margin-right:5px;">Standard
-              (32)</button>
-            <button type="button" id="selectAllSubjects" style="font-size:11px; padding:4px 8px;">Tout</button>
-            <button type="button" id="selectNoneSubjects" style="font-size:11px; padding:4px 8px;">Aucun</button>
+          <div class="settings-card-group">
+            <h4 class="settings-group-header" data-i18n="hdr_mask_auto">Masquage automatique (Cartes suspendues)</h4>
+            <p class="settings-field-hint" data-i18n="hint_mask_auto">Masque automatiquement les lignes ayant trop de cartes suspendues pour garder un tableau ciblé.</p>
+
+            <div class="settings-field-row">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_thresh_items">Items suspendus ></span>
+                <span class="settings-field-badge" id="badgeThreshItems">40 %</span>
+              </div>
+              <div class="settings-slider-container">
+                <input type="range" id="rangeThreshItems" min="0" max="100" step="5" value="40">
+                <input type="number" id="threshItemsInput" value="0.4" step="0.05" min="0" max="1" style="display:none;">
+              </div>
+            </div>
+
+            <div class="settings-field-row">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_thresh_sdd">SDD suspendus ></span>
+                <span class="settings-field-badge" id="badgeThreshSdd">50 %</span>
+              </div>
+              <div class="settings-slider-container">
+                <input type="range" id="rangeThreshSdd" min="0" max="100" step="5" value="50">
+                <input type="number" id="threshSddInput" value="0.5" step="0.05" min="0" max="1" style="display:none;">
+              </div>
+            </div>
+
+            <div class="settings-field-row">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_thresh_subj">Matières suspendues ></span>
+                <span class="settings-field-badge" id="badgeThreshSubj">40 %</span>
+              </div>
+              <div class="settings-slider-container">
+                <input type="range" id="rangeThreshSubj" min="0" max="100" step="5" value="40">
+                <input type="number" id="threshSubjInput" value="0.4" step="0.05" min="0" max="1" style="display:none;">
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card-group">
+            <h4 class="settings-group-header" data-i18n="hdr_overlap">Recoupement des Matières</h4>
+            <div class="settings-field-row">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_overlap_thresh">Seuil minimal de recoupement</span>
+                <span class="settings-field-badge" id="badgeOverlap">15 %</span>
+              </div>
+              <div class="settings-slider-container">
+                <input type="range" id="rangeOverlap" min="0" max="100" step="1" value="15">
+                <input type="number" id="subjectOverlapThreshold" value="0.15" step="0.01" min="0" max="1" style="display:none;">
+              </div>
+              <p class="settings-field-hint" data-i18n="hint_overlap_thresh">Ratio minimal de cartes taguées nécessaires pour rattacher une note à une matière transversale.</p>
+            </div>
+          </div>
+
+          <div class="settings-card-group">
+            <h4 class="settings-group-header" data-i18n="hdr_targets_colors">Objectifs & Indicateurs Vert / Rouge</h4>
+            <p class="settings-field-hint" data-i18n="hint_targets_colors">Définit les pourcentages à partir desquels les indicateurs s'affichent en couleur positive (vert).</p>
+
+            <div class="settings-field-row">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_color_mastery">Taux de Maîtrise</span>
+                <span class="settings-slider-preview-pill settings-pill-good" id="badgeMastery">≥ 70 %</span>
+              </div>
+              <div class="settings-slider-container">
+                <input type="range" id="rangeMastery" min="0" max="100" step="5" value="70">
+                <input type="number" id="colorThMastery" value="0.7" step="0.05" min="0" max="1" style="display:none;">
+              </div>
+            </div>
+
+            <div class="settings-field-row">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_color_ratio">Ratio Appris / Désuspendu</span>
+                <span class="settings-slider-preview-pill settings-pill-good" id="badgeRatio">≥ 70 %</span>
+              </div>
+              <div class="settings-slider-container">
+                <input type="range" id="rangeRatio" min="0" max="100" step="5" value="70">
+                <input type="number" id="colorThRatio" value="0.7" step="0.05" min="0" max="1" style="display:none;">
+              </div>
+            </div>
+
+            <div class="settings-field-row">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_color_total_ratio">Ratio Appris / Total</span>
+                <span class="settings-slider-preview-pill settings-pill-good" id="badgeTotalRatio">≥ 60 %</span>
+              </div>
+              <div class="settings-slider-container">
+                <input type="range" id="rangeTotalRatio" min="0" max="100" step="5" value="60">
+                <input type="number" id="colorThTotalRatio" value="0.6" step="0.05" min="0" max="1" style="display:none;">
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card-group">
+            <h4 class="settings-group-header" data-i18n="hdr_crit_diff">Alerte Difficulté FSRS</h4>
+            <div class="settings-field-row">
+              <div class="settings-field-label-group">
+                <span class="settings-field-title" data-i18n="lbl_crit_diff">Seuil critique de difficulté</span>
+                <span class="settings-slider-preview-pill settings-pill-warn" id="badgeCrit">Critique si > 80 %</span>
+              </div>
+              <div class="settings-slider-container">
+                <input type="range" id="rangeCrit" min="0" max="100" step="5" value="80">
+                <input type="number" id="critThresholdInput" value="0.8" step="0.05" min="0" max="1" style="display:none;">
+              </div>
+              <p class="settings-field-hint" data-i18n="hint_crit_diff">Marque un item comme critique/difficile dès que sa difficulté médiane dépasse ce seuil.</p>
+            </div>
+          </div>
+
+          <div class="settings-card-group">
+            <h4 class="settings-group-header" data-i18n="hdr_excluded_tags">Exclusion de Tags personnalisés</h4>
+            <p class="settings-field-hint" data-i18n="hint_excluded_tags">Sélectionnez ou ajoutez des tags à exclure des statistiques.</p>
+            
+            <div class="settings-subject-toolbar">
+              <input type="text" id="excludedTagSearchInput" class="settings-subject-search" placeholder="Filtrer ou ajouter un tag à exclure..." data-i18n-placeholder="placeholder_search_excluded_tags">
+              <div style="display:flex; gap:6px;">
+                <button type="button" id="addCustomExcludedTagBtn" class="settings-subj-btn primary" title="Ajouter le tag">+ Ajouter</button>
+                <button type="button" id="selectStandardExcludedTags" class="settings-subj-btn" data-i18n="btn_standard_excluded">Standard</button>
+                <button type="button" id="selectAllExcludedTags" class="settings-subj-btn" data-i18n="btn_all_excluded">Tout</button>
+                <button type="button" id="selectNoneExcludedTags" class="settings-subj-btn" data-i18n="btn_none_excluded">Aucun</button>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:12px; color:#666;">Tags exclus de l'analyse :</span>
+              <span id="excludedTagsActiveCountBadge" class="settings-field-badge">0 exclu(s)</span>
+            </div>
+
+            <div id="excludedTagsCheckboxList" class="settings-subject-box">
+              <p style="color:#999; font-style:italic; margin:4px 0;">Chargement des tags...</p>
+            </div>
+
+            <div style="margin-top:8px;">
+              <span class="settings-field-title" style="font-size:12px;" data-i18n="lbl_raw_excluded_tags">Tags exclus (séparés par virgules) :</span>
+              <input type="text" id="excludedTagsInput" placeholder="ex: pédiatrie, lca, hors-programme..." data-i18n-placeholder="placeholder_excluded_tags" style="width:100%; padding:6px 10px; border-radius:6px; border:1px solid #cbd5e0; font-size:13px; box-sizing:border-box; margin-top:4px;">
+            </div>
+          </div>
+
+          <div class="settings-card-group">
+            <h4 class="settings-group-header" data-i18n="hdr_subjects">Matières</h4>
+            <div class="settings-subject-toolbar">
+              <input type="text" id="subjectSearchInput" class="settings-subject-search" placeholder="Filtrer les matières (ex: cardio, neuro)..." data-i18n-placeholder="placeholder_search_subj">
+              <div style="display:flex; gap:6px;">
+                <button type="button" id="selectStandardSubjects" class="settings-subj-btn primary" data-i18n="btn_standard_subj">Standard</button>
+                <button type="button" id="selectAllSubjects" class="settings-subj-btn" data-i18n="btn_all_subj">Tout</button>
+                <button type="button" id="selectNoneSubjects" class="settings-subj-btn" data-i18n="btn_none_subj">Aucun</button>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="font-size:12px; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                <input type="checkbox" id="showSubjectChildren"> <span data-i18n="lbl_show_children">Afficher les sous-matières (enfants)</span>
+              </label>
+              <span id="subjectActiveCountBadge" class="settings-field-badge">0 sélectionnée(s)</span>
+            </div>
+
+            <div id="subjectCheckboxList" class="settings-subject-box">
+              <p style="color:#999; font-style:italic; margin:4px 0;">Chargement des matières...</p>
+            </div>
+
+            <div class="settings-preset-row">
+              <span style="font-size:12px; font-weight:600;" data-i18n="lbl_presets">Presets :</span>
+              <select id="subjectPreset" class="settings-preset-select">
+                <option value="" data-i18n="opt_no_preset">(Aucun preset actif)</option>
+              </select>
+              <button type="button" id="savePreset" class="settings-preset-btn" data-i18n="btn_save_preset">Sauvegarder</button>
+              <button type="button" id="deletePreset" class="settings-preset-btn settings-preset-btn-delete" data-i18n="btn_delete_preset">Supprimer</button>
+            </div>
           </div>
         </div>
 
-        <div id="subjectCheckboxList"
-          style="max-height:150px; overflow-y:auto; border:1px solid #ddd; padding:8px; background:#f9f9f9; border-radius:4px;">
-          <!-- Populated dynamically -->
-          <p style="color:#999; font-style:italic;">Chargement...</p>
-        </div>
+      </div>
 
-        <div style="margin-top:10px;">
-          <label style="font-size:12px;">
-            <strong>Preset:</strong>
-            <select id="subjectPreset" style="margin-left:5px; padding:2px;">
-              <option value="">(Aucun)</option>
-              <!-- Presets will be added here -->
-            </select>
-            <button type="button" id="savePreset"
-              style="font-size:11px; padding:2px 6px; margin-left:5px;">Sauvegarder</button>
-            <button type="button" id="deletePreset"
-              style="font-size:11px; padding:2px 6px; margin-left:2px; color:#c00;">Supprimer</button>
-          </label>
+      <!-- Modal Footer -->
+      <div class="settings-modal-footer">
+        <button type="button" class="settings-btn-reset" id="resetSettingsDefaultBtn" title="Rétablir les valeurs recommandées" data-i18n="btn_reset_defaults">Réinitialiser par défaut</button>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="settings-btn-cancel" id="closeSettingsBtn" data-i18n="btn_cancel">Annuler</button>
+          <button type="button" class="settings-btn-save" id="saveSettingsBtn" data-i18n="btn_save_apply">Valider et Appliquer</button>
         </div>
       </div>
 
-      <div
-        style="display:flex; justify-content:flex-end; gap:12px; margin-top:25px; padding-top:15px; border-top:1px solid #eee;">
-        <button id="closeSettingsBtn"
-          style="background:#f5f5f5; color:#333; border:1px solid #ddd; padding:10px 20px; border-radius:6px;">Annuler</button>
-        <button id="saveSettingsBtn"
-          style="background:#2c7bb6; color:#fff; border:none; padding:10px 20px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">Valider
-          et Appliquer</button>
-      </div>
     </div>
+  </div>
   </div>
 
   <main>
 
     <section id="overview" class="tab-content active">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h2>Analyse Graphique</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <label for="chartMetric" class="chart-title-header-label">
+            <span class="chart-title-main" data-i18n="lbl_chart_title">Graphique</span>
+            <select id="chartMetric" class="chart-title-select">
+              <option value="mastery" data-i18n="opt_mastery">Maîtrise</option>
+              <option value="difficulty" data-i18n="opt_difficulty">Difficulté</option>
+              <option value="studied_ratio" data-i18n="opt_studied_ratio">Ratio Appris/Désuspendu</option>
+              <option value="studied_total_ratio" data-i18n="opt_studied_total_ratio">Ratio Appris/Total</option>
+              <option value="unsuspended_share" data-i18n="opt_unsuspended_share">Part Désuspendue</option>
+            </select>
+          </label>
+          <span class="help-icon" id="helpIcon" style="cursor:pointer; font-size:16px; margin-left:4px; display:none;" title="Aide">ⓘ</span>
+        </div>
         <div id="metaBox" class="meta" style="margin:0; padding:4px 12px; font-size:12px;"></div>
-        <canvas id="detailsConfigChart" style="display:none;"></canvas>
+        <canvas id="detailsConfigChart" class="chart-canvas" style="display:none;"></canvas>
       </div> <!-- Closing Header Flex Container -->
 
       <!-- Analysis Chart -->
       <div style="margin-top:20px; width:100%; max-width:100%; overflow-x:auto;">
-        <div style="position:relative; height:500px; min-width:100%;">
-          <canvas id="mainChart"></canvas>
+        <div style="position:relative; height:500px; min-width:100%; overflow:hidden;">
+          <canvas id="mainChart" class="chart-canvas"></canvas>
         </div>
       </div>
       <div class="chart-scroll-container" style="display:none;">
         <div class="chart-scroll-inner">
-          <canvas id="scrollChart"></canvas>
+          <canvas id="scrollChart" class="chart-canvas"></canvas>
         </div>
       </div>
       <div class="small-note"><span id="chartHelpText">Cliquez sur une barre pour voir les détails ci-dessous.</span>
@@ -618,10 +1013,9 @@
         </div>
       </section>
 
-      <div
-        style="background:#2c7bb6; color:white; border-radius:8px; padding:10px 15px; margin-top:30px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between;">
-        <h2 style="margin:0; font-size:20px;" id="listTitle">Liste des Items</h2>
-        <button class="add-item-btn" id="addItemBtn" onclick="openTagBrowser()">+</button>
+      <div class="edn-list-header">
+        <h2 style="margin:0; font-size:16px; font-weight:700;" id="listTitle">Liste des Items</h2>
+        <button class="add-item-btn" id="addItemBtn" onclick="openTagBrowser()" title="Ajouter un tag / item">+</button>
       </div>
       <!-- Sort controls - persistent container -->
       <div id="sortControlsContainer" class="sort-controls" style="margin-bottom:15px;"></div>
@@ -632,27 +1026,30 @@
     <!-- New History & Forecast section -->
     <section id="historyForecastSection" class="tab-content" style="display:none; margin-top: 20px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
-        <h2 style="margin:0;">Historique & Prévisions</h2>
+        <h2 style="margin:0;" data-i18n="hdr_history_forecast">Révisions Stats</h2>
         <div style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
-          <label style="font-weight:600;">Historique : 
-            <select id="histWindowSelect" style="padding:4px 8px; border-radius:4px; margin-left:5px;">
+          <label style="font-weight:600; display:inline-flex; align-items:center; gap:4px;"><span data-i18n="lbl_history_inline">Historique :</span> 
+            <input type="number" id="histWindowSelect" list="histPresetList" value="70" min="1" max="1825" placeholder="jours" style="width:75px; padding:4px 6px; border-radius:6px; border:1px solid #ccc; font-weight:600; text-align:center;"> <span data-i18n="unit_days">j</span>
+            <datalist id="histPresetList">
               <option value="30">30 jours</option>
-              <option value="90" selected>90 jours</option>
-              <option value="180">180 jours</option>
-              <option value="365">1 an</option>
-            </select>
-          </label>
-          <label style="font-weight:600;">Prévisions : 
-            <select id="forecastWindowSelect" style="padding:4px 8px; border-radius:4px; margin-left:5px;">
-              <option value="7">7 jours</option>
-              <option value="14">14 jours</option>
-              <option value="30" selected>30 jours</option>
               <option value="90">90 jours</option>
               <option value="180">180 jours</option>
-              <option value="365">1 an</option>
-            </select>
+              <option value="365">1 an (365 j)</option>
+              <option value="730">2 ans (730 j)</option>
+            </datalist>
           </label>
-          <button id="refreshHistBtn" style="padding:6px 12px; font-size:13px; background:#2c7bb6; color:white; border:none; border-radius:4px; cursor:pointer;">Rafraîchir</button>
+          <label style="font-weight:600; display:inline-flex; align-items:center; gap:4px; margin-left:10px;">Prévisions : 
+            <input type="number" id="forecastWindowSelect" list="forecastPresetList" value="30" min="1" max="1825" placeholder="jours" style="width:75px; padding:4px 6px; border-radius:6px; border:1px solid #ccc; font-weight:600; text-align:center;"> j
+            <datalist id="forecastPresetList">
+              <option value="7">7 jours</option>
+              <option value="14">14 jours</option>
+              <option value="30">30 jours</option>
+              <option value="90">90 jours</option>
+              <option value="180">180 jours</option>
+              <option value="365">1 an (365 j)</option>
+              <option value="730">2 ans (730 j)</option>
+            </datalist>
+          </label>
         </div>
       </div>
 
@@ -660,33 +1057,62 @@
         <!-- Chart 1: Evolution of Card States & Real Retention -->
         <div class="history-card">
           <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-            <span>📈 Évolution des États & Rétention</span>
+            <span>Évolution des États & Rétention</span>
             <small style="font-weight:normal; font-size:12px; color:#666;" id="retentionStatsLabel"></small>
           </h3>
-          <div style="position:relative; height:350px; width:100%;">
-            <canvas id="histStatesChart" style="padding:0; border:none; margin:0; width:100%; height:100%;"></canvas>
+          <div style="position:relative; height:350px; width:100%; min-width:0; overflow:hidden;">
+            <canvas id="histStatesChart" class="chart-canvas"></canvas>
           </div>
         </div>
         
         <!-- Chart 2: Backlog & Reviews Volume -->
         <div class="history-card">
-          <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-            <span>📊 Retard (Backlog) & Volume de Révisions</span>
+          <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <span>Retard (Backlog) & Volume de Révisions</span>
+              <div class="chart-toggle-group">
+                <button type="button" class="chart-toggle-btn active" id="btnBacklogSplit" onclick="switchBacklogChartView('split')">Vue Découpée</button>
+                <button type="button" class="chart-toggle-btn" id="btnBacklogCombined" onclick="switchBacklogChartView('combined')">Vue Superposée</button>
+              </div>
+            </div>
             <small style="font-weight:normal; font-size:12px; color:#666;" id="backlogStatsLabel"></small>
           </h3>
-          <div style="position:relative; height:350px; width:100%;">
-            <canvas id="histBacklogChart" style="padding:0; border:none; margin:0; width:100%; height:100%;"></canvas>
+
+          <!-- Split View (Default): 2 Stacked Subcharts -->
+          <div id="backlogSplitView" class="subchart-container">
+            <div class="subchart-box">
+              <div class="subchart-header">
+                <span>Volume de révisions & Backlog total</span>
+                <span id="backlogTrendBadge" style="font-size:12px; font-weight:700;"></span>
+              </div>
+              <div style="position:relative; height:220px; width:100%; min-width:0; overflow:hidden;">
+                <canvas id="histBacklogVolChart" class="chart-canvas"></canvas>
+              </div>
+            </div>
+            <div class="subchart-box">
+              <div class="subchart-header">
+                <span>Performance : Rétention % (gauche) & Temps moyen par carte (droite)</span>
+              </div>
+              <div style="position:relative; height:190px; width:100%; min-width:0; overflow:hidden;">
+                <canvas id="histBacklogPerfChart" class="chart-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Combined View (Single canvas alternative) -->
+          <div id="backlogCombinedView" style="position:relative; height:380px; width:100%; min-width:0; overflow:hidden; display:none;">
+            <canvas id="histBacklogChart" class="chart-canvas"></canvas>
           </div>
         </div>
         
         <!-- Chart 3: FSRS Future Forecast Simulator -->
         <div class="history-card">
           <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-            <span>🎯 Prévisions FSRS (Workload estimé)</span>
+            <span>Prévisions FSRS (Workload estimé)</span>
             <small style="font-weight:normal; font-size:12px; color:#666;" id="forecastStatsLabel"></small>
           </h3>
-          <div style="position:relative; height:350px; width:100%;">
-            <canvas id="forecastChart" style="padding:0; border:none; margin:0; width:100%; height:100%;"></canvas>
+          <div style="position:relative; height:350px; width:100%; min-width:0; overflow:hidden;">
+            <canvas id="forecastChart" class="chart-canvas"></canvas>
           </div>
         </div>
       </div>
@@ -706,7 +1132,29 @@
       <h3>Explication de la formule de difficulté</h3>
       <p>Difficulty = w1 * recent_again_rate + w2 * lapse_rate + w3 * (1 - mastery).</p>
       <p><em>recent_again_rate</em> = % d’“again” dans la fenêtre glissante (revlog). <em>lapse_rate</em> = part de
-        lapses historiques. <em>mastery</em> = (recent + mature) / total.</p>
+    <!-- Chart Context Menu -->
+    <div id="ednContextMenu" class="edn-context-menu">
+      <div id="ctxMenuHeader" class="edn-context-menu-header">Item</div>
+      <div class="edn-context-menu-item" id="ctxActionExclude">
+        <span>Masquer ce tag du graphique</span>
+      </div>
+      <div class="edn-context-menu-divider"></div>
+      <div class="edn-context-menu-item" id="ctxActionBrowse">
+        <span>Ouvrir dans le Navigateur Anki (Browse)</span>
+      </div>
+      <div class="edn-context-menu-item" id="ctxActionFilteredDeck">
+        <span>Créer un paquet filtré (Réviser cet item)</span>
+      </div>
+      <div class="edn-context-menu-divider"></div>
+      <div class="edn-context-menu-item" id="ctxActionCopyStats">
+        <span>Copier la synthèse des stats</span>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="ednToast" class="edn-toast">
+      <span id="ednToastMessage">Notification</span>
+      <button id="ednToastAction" class="edn-toast-btn" style="display:none;">Annuler</button>
     </div>
     </div>
   </main>
@@ -778,6 +1226,249 @@
     };
 
     // Chart Logic
+    let currentMainChartItems = [];
+    let selectedContextItem = null;
+
+    function hideContextMenu() {
+      const menu = document.getElementById('ednContextMenu');
+      if (menu) menu.style.display = 'none';
+      selectedContextItem = null;
+    }
+
+    let toastTimeout = null;
+    function showToast(message, undoAction = null) {
+      const toast = document.getElementById('ednToast');
+      const msgEl = document.getElementById('ednToastMessage');
+      const btnEl = document.getElementById('ednToastAction');
+      if (!toast || !msgEl || !btnEl) return;
+
+      msgEl.textContent = message;
+      if (undoAction) {
+        btnEl.style.display = 'inline-block';
+        btnEl.onclick = (e) => {
+          e.stopPropagation();
+          hideToast();
+          undoAction();
+        };
+      } else {
+        btnEl.style.display = 'none';
+        btnEl.onclick = null;
+      }
+
+      toast.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        hideToast();
+      }, 4000);
+    }
+
+    function hideToast() {
+      const toast = document.getElementById('ednToast');
+      if (toast) toast.classList.remove('show');
+    }
+
+    function excludeTagFromChart(tag, displayName) {
+      const exInput = document.getElementById('excludedTagsInput');
+      if (!exInput) return;
+      const currentVal = exInput.value || '';
+      const tags = parseExcludedTagsString(currentVal);
+      if (!tags.map(t => t.toLowerCase()).includes(tag.toLowerCase())) {
+        tags.push(tag);
+        exInput.value = tags.join(', ');
+        populateExcludedTagsCheckboxes();
+        syncExcludedTagsToDropdown();
+        saveState();
+        triggerRecompute();
+        showToast(`Tag « ${displayName || tag} » masqué`, () => {
+          unexcludeTagFromChart(tag, displayName);
+        });
+      }
+    }
+
+    function unexcludeTagFromChart(tag, displayName) {
+      const exInput = document.getElementById('excludedTagsInput');
+      if (!exInput) return;
+      const currentVal = exInput.value || '';
+      let tags = parseExcludedTagsString(currentVal);
+      tags = tags.filter(t => t.toLowerCase() !== tag.toLowerCase());
+      exInput.value = tags.join(', ');
+      populateExcludedTagsCheckboxes();
+      syncExcludedTagsToDropdown();
+      saveState();
+      triggerRecompute();
+      showToast(`Tag « ${displayName || tag} » rétabli`);
+    }
+
+    function openBrowserForTag(tag) {
+      const rangMode = els.rangMode?.value || 'all';
+      let q = `tag:"${tag}*"`;
+      if (rangMode === 'onlyA') {
+        q += ' tag:Rang::A';
+      } else if (rangMode === 'notA') {
+        q += ' -tag:Rang::A';
+      }
+      send_py('open_search ' + q);
+    }
+
+    function createFilteredDeckForTag(tag, displayName) {
+      const rangMode = els.rangMode?.value || 'all';
+      let q = `tag:"${tag}*" (is:due OR is:learn OR is:review)`;
+      if (rangMode === 'onlyA') {
+        q += ' tag:Rang::A';
+      } else if (rangMode === 'notA') {
+        q += ' -tag:Rang::A';
+      }
+      const deckName = `EDN — ${displayName || tag}`;
+      send_py('create_filtered_deck ' + JSON.stringify({
+        name: deckName,
+        query: q,
+        limit: 100
+      }));
+    }
+
+    function copyStatsSummaryForTag(item) {
+      if (!item) return;
+      const name = item.display_name || item.tag;
+      const mastery = pct(item.mastery);
+      const diff = pct(item.difficulty);
+      const ratio = pct(item.studied_total_ratio || 0);
+      const unsuspRatio = pct(item.studied_ratio || 0);
+      const counts = item.counts || {};
+      
+      const text = `${name}\n` +
+        `Maîtrise : ${mastery}% | Difficulté : ${diff}% | Appris/Total : ${ratio}% (Appris/Désuspendu : ${unsuspRatio}%)\n` +
+        `Total : ${item.total || 0} cartes (${counts.new || 0} Inédites, ${counts.mature || 0} Matures, ${counts.recent || 0} Récentes, ${counts.suspended || 0} Suspendues, ${counts.learning || 0} En cours)`;
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast("Synthèse copiée dans le presse-papier");
+        }).catch(() => {
+          fallbackCopyText(text);
+        });
+      } else {
+        fallbackCopyText(text);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast("Synthèse copiée dans le presse-papier");
+      } catch (err) {
+        showToast("Impossible de copier la synthèse");
+      }
+      document.body.removeChild(ta);
+    }
+
+    function initContextMenu() {
+      const menu = document.getElementById('ednContextMenu');
+      if (!menu) return;
+
+      document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target)) {
+          hideContextMenu();
+        }
+      });
+
+      window.addEventListener('scroll', hideContextMenu, true);
+      window.addEventListener('resize', hideContextMenu);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') hideContextMenu();
+      });
+
+      document.getElementById('ctxActionExclude')?.addEventListener('click', () => {
+        if (selectedContextItem) {
+          excludeTagFromChart(selectedContextItem.tag, selectedContextItem.display_name);
+        }
+        hideContextMenu();
+      });
+
+      document.getElementById('ctxActionBrowse')?.addEventListener('click', () => {
+        if (selectedContextItem) {
+          openBrowserForTag(selectedContextItem.tag);
+        }
+        hideContextMenu();
+      });
+
+      document.getElementById('ctxActionFilteredDeck')?.addEventListener('click', () => {
+        if (selectedContextItem) {
+          createFilteredDeckForTag(selectedContextItem.tag, selectedContextItem.display_name);
+        }
+        hideContextMenu();
+      });
+
+      document.getElementById('ctxActionCopyStats')?.addEventListener('click', () => {
+        if (selectedContextItem) {
+          copyStatsSummaryForTag(selectedContextItem);
+        }
+        hideContextMenu();
+      });
+
+      const attachChartContextMenu = (canvasEl) => {
+        if (!canvasEl) return;
+        canvasEl.addEventListener('contextmenu', (e) => {
+          if (!mainChart || !currentMainChartItems || !currentMainChartItems.length) return;
+
+          let targetItem = null;
+          try {
+            const points = mainChart.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+            if (points && points.length > 0) {
+              const idx = points[0].index;
+              targetItem = currentMainChartItems[idx];
+            }
+          } catch (err) {
+            console.warn("Chart hit test error:", err);
+          }
+
+          if (!targetItem && mainChart.scales?.x) {
+            const rect = canvasEl.getBoundingClientRect();
+            const xPixel = e.clientX - rect.left;
+            const idx = mainChart.scales.x.getValueForPixel(xPixel);
+            if (idx !== undefined && idx >= 0 && idx < currentMainChartItems.length) {
+              targetItem = currentMainChartItems[idx];
+            }
+          }
+
+          if (!targetItem) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          selectedContextItem = targetItem;
+          const headerEl = document.getElementById('ctxMenuHeader');
+          if (headerEl) {
+            headerEl.textContent = targetItem.display_name || targetItem.tag;
+          }
+
+          menu.style.display = 'block';
+          const menuWidth = menu.offsetWidth || 270;
+          const menuHeight = menu.offsetHeight || 180;
+
+          let left = e.clientX;
+          let top = e.clientY;
+
+          if (left + menuWidth > window.innerWidth) {
+            left = window.innerWidth - menuWidth - 10;
+          }
+          if (top + menuHeight > window.innerHeight) {
+            top = window.innerHeight - menuHeight - 10;
+          }
+
+          menu.style.left = `${Math.max(10, left)}px`;
+          menu.style.top = `${Math.max(10, top)}px`;
+        });
+      };
+
+      attachChartContextMenu(els.mainChart);
+      attachChartContextMenu(document.getElementById('scrollChart'));
+    }
+
     function renderChart() {
       if (!els.mainChart) return; // Use the new mainChart ID
 
@@ -791,8 +1482,13 @@
       items.sort((a, b) => {
         let va = getMetricValue(a, STATE.chartMetric);
         let vb = getMetricValue(b, STATE.chartMetric);
-        return (vb - va); // always desc for chart
+        if (STATE.chartMetric === 'difficulty') {
+          return va - vb; // Ascending for difficulty: lowest (best) on left, highest (worst) on right
+        }
+        return vb - va; // Descending for other metrics: highest (best) on left, lowest (worst) on right
       });
+
+      currentMainChartItems = items;
 
       // Prepare data
       const labels = items.map(x => x.display_name || x.tag);
@@ -933,9 +1629,12 @@
       if (reset) {
         STATE.renderedCount = 0;
         els.pages.innerHTML = '';
-        // Create sorted list once and store it
-        // Check for 'percent' map or calc from counts
-        const rawList = STATE.data.items.filter(i => true); // No complex filtering needed, backend handles suspension
+        const term = (STATE.searchTerm || '').toLowerCase().trim();
+        const rawList = STATE.data.items.filter(i => {
+          if (!term) return true;
+          const name = (i.display_name || i.tag || '').toLowerCase();
+          return name.includes(term);
+        });
 
         // Explicit cleanup for values to ensure sort works
         rawList.sort((a, b) => {
@@ -1055,6 +1754,18 @@
       }
     };
 
+    function formatItemTitle(rawName) {
+      if (!rawName) return { num: '', title: '' };
+      const match = rawName.match(/^(?:Item\s+)?(\d{1,3})\s*(?:—|-|:)\s*(.+)$/i);
+      if (match) {
+        return {
+          num: '#' + match[1].padStart(3, '0'),
+          title: match[2].trim()
+        };
+      }
+      return { num: '', title: rawName };
+    }
+
     function appendItems(list) {
       if (!list || list.length === 0) return;
 
@@ -1063,77 +1774,83 @@
 
       let html = '';
       for (const it of filteredList) {
-
-
         const diffVal = it.difficulty || 0;
-        const diffClass = diffVal >= 0.7 ? 'metric-bad' : (diffVal < 0.3 ? 'metric-good' : 'metric-neutral');
-        // const diffBg provided by CSS classes? Or simplified inline.
-        // Let's use clean visual logic:
-        // Good = Green Text, No Border.
-        // Bad = Red Text, Red Border + Bg.
-
         const ratioPct = Math.min(100, Math.round((it.studied_ratio || 0) * 100));
         const masteryPct = Math.min(100, Math.round((it.mastery || 0) * 100));
         const diffPct = Math.round(diffVal * 100);
         let unsuspRaw = (it.unsuspended / it.total) || 0;
-        if (unsuspRaw > 1) unsuspRaw = 1; // Safety clamp
+        if (unsuspRaw > 1) unsuspRaw = 1;
         const unsuspPct = Math.min(100, Math.round(unsuspRaw * 100));
+        const totalRatioPct = Math.min(100, Math.round((it.studied_total_ratio || 0) * 100));
 
         // Thresholds from config
-        const thRatio = (parseFloat(document.getElementById('colorThRatio').value) || 0.7) * 100;
-        const thMastery = (parseFloat(document.getElementById('colorThMastery').value) || 0.7) * 100;
-        const thTotalRatio = (parseFloat(document.getElementById('colorThTotalRatio').value) || 0.6) * 100;
-        const thCrit = parseFloat(document.getElementById('critThresholdInput').value) || 0.8;
+        const thRatio = (parseFloat(document.getElementById('colorThRatio')?.value) || 0.7) * 100;
+        const thMastery = (parseFloat(document.getElementById('colorThMastery')?.value) || 0.7) * 100;
+        const thTotalRatio = (parseFloat(document.getElementById('colorThTotalRatio')?.value) || 0.6) * 100;
+        const thCrit = parseFloat(document.getElementById('critThresholdInput')?.value) || 0.8;
 
-        // Logic: > Threshold = Good (Green, No Border). < Threshold = Bad (Red, Box).
-        const styleRatio = ratioPct >= thRatio ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
-        const styleMastery = masteryPct >= thMastery ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
-        const styleDiff = diffVal > thCrit ? 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;' : (diffVal < 0.3 ? 'color:#388e3c; font-weight:800;' : 'color:#555; font-weight:600;');
+        const styleRatio = ratioPct >= thRatio ? 'color:#388e3c; font-weight:700;' : 'color:#d32f2f; font-weight:700;';
+        const styleMastery = masteryPct >= thMastery ? 'color:#388e3c; font-weight:700;' : 'color:#d32f2f; font-weight:700;';
+        const styleDiff = diffVal > thCrit ? 'color:#d32f2f; font-weight:700;' : (diffVal < 0.3 ? 'color:#388e3c; font-weight:700;' : 'color:#555; font-weight:600;');
+        
+        let diffBadgeClass = 'badge-diff-mid';
+        let diffLabel = 'Moyenne';
+        if (diffVal > thCrit || diffVal >= 0.7) {
+          diffBadgeClass = 'badge-diff-hard';
+          diffLabel = 'Élevée';
+        } else if (diffVal < 0.3) {
+          diffBadgeClass = 'badge-diff-easy';
+          diffLabel = 'Facile';
+        }
 
-        // Unsuspend: High is good?
-        const styleUnsus = unsuspPct >= 40 ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
+        const barColor = totalRatioPct >= thTotalRatio ? '#388e3c' : '#d32f2f';
 
-        const styleTotalRatio = pct(it.studied_total_ratio) >= thTotalRatio ? 'color:#388e3c; font-weight:800;' : 'color:#d32f2f; background:#ffebee; border:1px solid #d32f2f20; padding:2px 6px; border-radius:4px; font-weight:800;';
+        const { num, title } = formatItemTitle(it.display_name || it.tag);
 
         html += `
-         <div class="item modern-card" onclick="showDetailForTag('${it.tag}')">
-            <button class="exclude-btn" onclick="event.stopPropagation(); excludeItem('${it.tag}')"></button>
-            <div class="card-title">
-               ${it.display_name || it.tag}
-            </div>
+          <div class="item modern-card" onclick="showDetailForTag('${it.tag}')">
+            <button class="exclude-btn" title="Masquer / Exclure" onclick="event.stopPropagation(); excludeItem('${it.tag}')"></button>
             
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:8px; font-size:12px; text-align:center; padding:0 5px;">
-               <!-- Ratio -->
-               <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                 <span style="color:#666; font-size:11px;">Appris/Désusp.</span>
-                 <span style="${styleRatio}">${ratioPct}%</span>
-               </div>
-               
-               <!-- Maitrise -->
-               <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                 <span style="color:#666; font-size:11px;">Maîtrise</span>
-                 <span style="${styleMastery}">${masteryPct}%</span>
-               </div>
+            <div class="card-header-row">
+              ${num ? `<span class="card-num-badge">${num}</span>` : ''}
+              <div class="card-title-text" title="${it.display_name || it.tag}">${title}</div>
+            </div>
 
-               <!-- Difficulté -->
-               <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                 <span style="color:#666; font-size:11px;">Difficulté</span>
-                 <span style="${styleDiff}">${diffPct}%</span>
-               </div>
-               
-               <!-- Part Désuspendue -->
-               <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                 <span style="color:#666; font-size:11px;">Désusp.</span>
-                 <span style="${styleUnsus}">${it.unsuspended}/${it.total}</span>
-               </div>
-               <!-- Appris/Total -->
-               <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
-                 <span style="color:#666;">Appris/Total:</span>
-                 <span style="${styleTotalRatio}">${pct(it.studied_total_ratio)}%</span>
-               </div>
-             </div>
+            <div class="card-progress-section">
+              <div class="card-progress-labels">
+                <span>Progression (Appris/Total)</span>
+                <span style="font-family:ui-monospace, monospace; font-size:12px; font-weight:700; color:${totalRatioPct >= thTotalRatio ? '#388e3c' : '#d32f2f'}">${totalRatioPct}%</span>
+              </div>
+              <div class="card-progress-track">
+                <div class="card-progress-bar" style="width:${totalRatioPct}%; background:${barColor};"></div>
+              </div>
+              <div class="card-progress-sub">
+                <span>Désuspendues : <strong>${it.unsuspended}/${it.total}</strong> (${unsuspPct}%)</span>
+                <span>Appris/Désusp. : <strong style="${styleRatio}">${ratioPct}%</strong></span>
+              </div>
+            </div>
+
+            <div class="card-metrics-grid">
+              <div class="metric-box">
+                <div>
+                  <div class="metric-box-label" data-i18n="card_mastery">${window.EDN_I18N ? window.EDN_I18N.t('card_mastery') : 'Maîtrise'}</div>
+                  <div class="metric-box-val" style="${styleMastery}">${masteryPct}%</div>
+                </div>
+                <span class="metric-badge-pill ${masteryPct >= thMastery ? 'badge-diff-easy' : 'badge-diff-hard'}">
+                  ${masteryPct >= thMastery ? 'OK' : 'À revoir'}
+                </span>
+              </div>
+
+              <div class="metric-box">
+                <div>
+                  <div class="metric-box-label" data-i18n="card_difficulty">${window.EDN_I18N ? window.EDN_I18N.t('card_difficulty') : 'Difficulté'}</div>
+                  <div class="metric-box-val" style="${styleDiff}">${diffPct}%</div>
+                </div>
+                <span class="metric-badge-pill ${diffBadgeClass}">${diffLabel}</span>
+              </div>
+            </div>
           </div>
-          `;
+        `;
       }
       els.pages.innerHTML += html;
     }
@@ -1280,47 +1997,48 @@
         // Data Points
         let data = [];
 
+        const _t = (k, fb) => window.EDN_I18N ? window.EDN_I18N.t(k) : fb;
         if (separate) {
           // Separate mode: show suspended and buried as separate categories
           data = [
-            { label: 'Inédites', val: counts.new || 0, color: colors.new, key: 'new' },
-            { label: 'À repasser', val: counts.learning || 0, color: colors.learning, key: 'learning' },
-            { label: 'Réapprentissage', val: counts.relearning || 0, color: colors.relearning, key: 'relearning' },
-            { label: 'Récentes', val: counts.recent || 0, color: colors.recent, key: 'recent' },
-            { label: 'Matures', val: counts.mature || 0, color: colors.mature, key: 'mature' },
-            { label: 'Suspendues', val: counts.suspended || 0, color: colors.suspended, key: 'suspended' },
-            { label: 'Enfouies', val: counts.buried || 0, color: colors.buried, key: 'buried' }
+            { label: _t('slice_new', 'Inédites'), val: counts.new || 0, color: colors.new, key: 'new' },
+            { label: _t('slice_learning', 'À repasser'), val: counts.learning || 0, color: colors.learning, key: 'learning' },
+            { label: _t('slice_relearning', 'Réapprentissage'), val: counts.relearning || 0, color: colors.relearning, key: 'relearning' },
+            { label: _t('slice_recent', 'Récentes'), val: counts.recent || 0, color: colors.recent, key: 'recent' },
+            { label: _t('slice_mature', 'Matures'), val: counts.mature || 0, color: colors.mature, key: 'mature' },
+            { label: _t('slice_suspended', 'Suspendues'), val: counts.suspended || 0, color: colors.suspended, key: 'suspended' },
+            { label: _t('slice_buried', 'Enfouies'), val: counts.buried || 0, color: colors.buried, key: 'buried' }
           ];
         } else {
           // Non-separate mode: include suspended/buried in their respective categories
           // Use detailed counts to properly categorize
           data = [
             {
-              label: 'Inédites',
+              label: _t('slice_new', 'Inédites'),
               val: (counts.new || 0) + (counts.new_suspended || 0) + (counts.new_buried || 0),
               color: colors.new,
               key: 'new'
             },
             {
-              label: 'À repasser',
+              label: _t('slice_learning', 'À repasser'),
               val: (counts.learning || 0) + (counts.learning_suspended || 0) + (counts.learning_buried || 0),
               color: colors.learning,
               key: 'learning'
             },
             {
-              label: 'Réapprentissage',
+              label: _t('slice_relearning', 'Réapprentissage'),
               val: (counts.relearning || 0) + (counts.relearning_suspended || 0) + (counts.relearning_buried || 0),
               color: colors.relearning,
               key: 'relearning'
             },
             {
-              label: 'Récentes',
+              label: _t('slice_recent', 'Récentes'),
               val: (counts.recent || 0) + (counts.recent_suspended || 0) + (counts.recent_buried || 0),
               color: colors.recent,
               key: 'recent'
             },
             {
-              label: 'Matures',
+              label: _t('slice_mature', 'Matures'),
               val: (counts.mature || 0) + (counts.mature_suspended || 0) + (counts.mature_buried || 0),
               color: colors.mature,
               key: 'mature'
@@ -1330,7 +2048,7 @@
 
         // Add "Autres" if any cards are in that category
         if ((counts.other || 0) > 0) {
-          data.push({ label: 'Autres', val: counts.other || 0, color: colors.other || '#999', key: 'other' });
+          data.push({ label: _t('slice_other', 'Autres'), val: counts.other || 0, color: colors.other || '#999', key: 'other' });
         }
 
         let pieTotal = data.reduce((acc, d) => acc + d.val, 0);
@@ -1425,22 +2143,38 @@
     // Create sort buttons ONCE on init (persistent)
     const sortContainer = document.getElementById('sortControlsContainer');
     if (sortContainer) {
+      const _t = (k, fb) => window.EDN_I18N ? window.EDN_I18N.t(k) : fb;
       sortContainer.innerHTML = `
-    <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
-    <span style="white-space:nowrap;">Trier par:</span>
-    <button data-sort="studied_ratio" style="white-space:nowrap;">Ratio Appris/Désusp</button>
-    <button data-sort="studied_total_ratio" style="white-space:nowrap;">Ratio Appris/Total</button>
-    <button data-sort="mastery" style="white-space:nowrap;">Maîtrise</button>
-    <button data-sort="difficulty" style="white-space:nowrap;">Difficulté</button>
-    <button data-sort="unsuspended_share" style="white-space:nowrap;">Part Désuspendue</button>
-    <span class="sort-dir" style="white-space:nowrap;">↓</span>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; width:100%;">
+      <div class="item-search-wrapper">
+        <span class="item-search-icon">🔍</span>
+        <input type="text" id="itemSearchInput" placeholder="Rechercher un item..." class="item-search-input" value="${STATE.searchTerm || ''}">
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin-left:auto;">
+        <span style="white-space:nowrap; font-size:12px; font-weight:600;" data-i18n="sort_by">${_t('sort_by', 'Trier par :')}</span>
+        <button data-sort="studied_ratio" style="white-space:nowrap;" data-i18n="sort_studied_ratio">${_t('sort_studied_ratio', 'Ratio Appris/Désusp')}</button>
+        <button data-sort="studied_total_ratio" style="white-space:nowrap;" data-i18n="sort_studied_total_ratio">${_t('sort_studied_total_ratio', 'Ratio Appris/Total')}</button>
+        <button data-sort="mastery" style="white-space:nowrap;" data-i18n="sort_mastery">${_t('sort_mastery', 'Maîtrise')}</button>
+        <button data-sort="difficulty" style="white-space:nowrap;" data-i18n="sort_difficulty">${_t('sort_difficulty', 'Difficulté')}</button>
+        <button data-sort="unsuspended_share" style="white-space:nowrap;" data-i18n="sort_unsuspended_share">${_t('sort_unsuspended_share', 'Part Désuspendue')}</button>
+        <span class="sort-dir" style="white-space:nowrap;">↓</span>
+      </div>
     </div>
     `;
+
+      const searchInput = sortContainer.querySelector('#itemSearchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', function (e) {
+          STATE.searchTerm = e.target.value;
+          renderPages(true);
+        });
+      }
+
       sortContainer.querySelectorAll('button').forEach(b => {
         const sortValue = b.dataset.sort;
         b.addEventListener('click', function (e) {
           e.preventDefault();
-          console.log('🔴 PERSISTENT SORT CLICK:', sortValue);
+          console.log('PERSISTENT SORT CLICK:', sortValue);
           if (STATE.sortField === sortValue) {
             STATE.sortDir *= -1;
           } else {
@@ -1448,6 +2182,7 @@
             STATE.sortDir = -1;
           }
           renderPages(true);
+          saveState();
         });
       });
     }
@@ -1498,10 +2233,17 @@
 
     els.rangMode.addEventListener('change', () => saveState());
     els.includeChildren.addEventListener('change', () => saveState());
-    document.getElementById('excludePediatric')?.addEventListener('change', () => triggerRecompute(false));
 
-    // REMOVED: Auto-refresh on subject change - causes lag
-    // User must click "Appliquer" to update
+    // Excluded Tags Dropdown Trigger
+    document.getElementById('excludedTagsTrigger')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const list = document.getElementById('excludedTagsList');
+      if (list) list.style.display = list.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.getElementById('excludedTagsList')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
 
     els.metricSelect.addEventListener('change', (e) => {
       STATE.chartMetric = e.target.value;
@@ -1547,12 +2289,278 @@
     // Initialize help icon visibility
     updateHelpIconVisibility();
 
+    // === EXCLUDED TAGS LOGIC ===
+    const STANDARD_EXCLUDED_TAGS = ['pédiatrie', 'lca', 'hors-programme', 'rang-c', 'annales'];
+
+    function parseExcludedTagsString(str) {
+      if (!str) return [];
+      return str.split(/[,;\n]+/).map(s => s.trim()).filter(s => s.length > 0);
+    }
+
+    function getCandidateExcludedTags() {
+      const candidates = new Set(STANDARD_EXCLUDED_TAGS);
+      const curInputVal = document.getElementById('excludedTagsInput')?.value || window.EDN_STATE_CACHE?.settings?.excludedTags || '';
+      parseExcludedTagsString(curInputVal).forEach(t => candidates.add(t));
+      if (window.EDN_AVAILABLE_TAGS && Array.isArray(window.EDN_AVAILABLE_TAGS)) {
+        window.EDN_AVAILABLE_TAGS.forEach(t => candidates.add(t));
+      }
+      return Array.from(candidates);
+    }
+
+    function populateExcludedTagsCheckboxes() {
+      const container = document.getElementById('excludedTagsCheckboxList');
+      if (!container) return;
+
+      const candidates = getCandidateExcludedTags();
+      const curInputVal = document.getElementById('excludedTagsInput')?.value || window.EDN_STATE_CACHE?.settings?.excludedTags || '';
+      const activeTags = parseExcludedTagsString(curInputVal).map(t => t.toLowerCase());
+
+      container.innerHTML = '';
+      if (candidates.length === 0) {
+        container.innerHTML = '<p style="color:#999; font-style:italic; margin:4px 0;">Aucun tag disponible</p>';
+        return;
+      }
+
+      candidates.forEach(tag => {
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.marginBottom = '5px';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = tag;
+        cb.id = 'ex_tag_' + tag.replace(/[^a-zA-Z0-9]/g, '_');
+        cb.checked = activeTags.includes(tag.toLowerCase());
+
+        cb.onchange = () => {
+          syncExcludedTagsFromCheckboxes();
+          syncExcludedTagsToDropdown();
+          saveState();
+        };
+
+        const label = document.createElement('label');
+        label.htmlFor = cb.id;
+        label.style.marginLeft = '5px';
+        label.style.flexGrow = '1';
+        label.style.cursor = 'pointer';
+        label.textContent = tag;
+
+        const onlyBtn = document.createElement('span');
+        onlyBtn.textContent = 'Uniquement';
+        onlyBtn.className = 'uniquement-btn';
+        onlyBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          container.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+          cb.checked = true;
+          syncExcludedTagsFromCheckboxes();
+          syncExcludedTagsToDropdown();
+          saveState();
+        };
+
+        div.appendChild(cb);
+        div.appendChild(label);
+        div.appendChild(onlyBtn);
+        container.appendChild(div);
+      });
+
+      updateExcludedTagsActiveCount();
+    }
+
+    function syncExcludedTagsFromCheckboxes() {
+      const checked = Array.from(document.querySelectorAll('#excludedTagsCheckboxList input[type=checkbox]:checked')).map(cb => cb.value);
+      const exInput = document.getElementById('excludedTagsInput');
+      if (exInput) {
+        exInput.value = checked.join(', ');
+      }
+      updateExcludedTagsActiveCount();
+    }
+
+    function updateExcludedTagsActiveCount() {
+      const total = document.querySelectorAll('#excludedTagsCheckboxList input[type=checkbox]').length;
+      const checked = document.querySelectorAll('#excludedTagsCheckboxList input[type=checkbox]:checked').length;
+      const badge = document.getElementById('excludedTagsActiveCountBadge');
+      if (badge) {
+        badge.textContent = `${checked} exclu(s)`;
+      }
+    }
+
+    function syncExcludedTagsToDropdown() {
+      const list = document.getElementById('excludedTagsList');
+      if (!list) return;
+
+      const candidates = getCandidateExcludedTags();
+      const curInputVal = document.getElementById('excludedTagsInput')?.value || window.EDN_STATE_CACHE?.settings?.excludedTags || '';
+      const activeTags = parseExcludedTagsString(curInputVal).map(t => t.toLowerCase());
+
+      list.innerHTML = '';
+      if (candidates.length === 0) {
+        list.innerHTML = '<p style="padding:6px 10px; color:#999; margin:0; font-size:12px;">Aucun tag disponible</p>';
+        return;
+      }
+
+      candidates.forEach(tag => {
+        const label = document.createElement('label');
+        label.style.display = 'flex';
+        label.style.alignItems = 'center';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = tag;
+        cb.checked = activeTags.includes(tag.toLowerCase());
+
+        cb.onchange = () => {
+          // Sync with settings checkboxes & text input
+          const settingsCb = Array.from(document.querySelectorAll('#excludedTagsCheckboxList input[type=checkbox]')).find(c => c.value.toLowerCase() === tag.toLowerCase());
+          if (settingsCb) settingsCb.checked = cb.checked;
+          
+          const currentList = Array.from(list.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
+          const exInput = document.getElementById('excludedTagsInput');
+          if (exInput) exInput.value = currentList.join(', ');
+
+          updateExcludedTagsTriggerLabel();
+          updateExcludedTagsActiveCount();
+          saveState();
+          triggerRecompute(false);
+        };
+
+        const spanText = document.createElement('span');
+        spanText.textContent = tag;
+        spanText.style.flexGrow = '1';
+
+        const onlyBtn = document.createElement('span');
+        onlyBtn.textContent = 'Uniquement';
+        onlyBtn.className = 'uniquement-btn-dropdown';
+        onlyBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          list.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+          cb.checked = true;
+          const exInput = document.getElementById('excludedTagsInput');
+          if (exInput) exInput.value = tag;
+          
+          document.querySelectorAll('#excludedTagsCheckboxList input[type=checkbox]').forEach(c => {
+            c.checked = c.value.toLowerCase() === tag.toLowerCase();
+          });
+
+          updateExcludedTagsTriggerLabel();
+          updateExcludedTagsActiveCount();
+          saveState();
+          triggerRecompute(false);
+        };
+
+        label.appendChild(cb);
+        label.appendChild(spanText);
+        label.appendChild(onlyBtn);
+        list.appendChild(label);
+      });
+
+      updateExcludedTagsTriggerLabel();
+    }
+
+    function updateExcludedTagsTriggerLabel() {
+      const curInputVal = document.getElementById('excludedTagsInput')?.value || window.EDN_STATE_CACHE?.settings?.excludedTags || '';
+      const activeTags = parseExcludedTagsString(curInputVal);
+      const trigger = document.getElementById('excludedTagsTrigger');
+      if (!trigger) return;
+
+      if (activeTags.length === 0) {
+        trigger.textContent = "Tags exclus (Aucun)";
+      } else if (activeTags.length === 1) {
+        let name = activeTags[0];
+        trigger.textContent = name.length > 15 ? name.substring(0, 12) + "..." : name;
+      } else {
+        trigger.textContent = `Tags exclus (${activeTags.length})`;
+      }
+    }
+
+    // Settings Tag Exclusion Toolbar Handlers
+    document.getElementById('excludedTagSearchInput')?.addEventListener('input', (e) => {
+      const q = (e.target.value || '').toLowerCase().trim();
+      const items = document.querySelectorAll('#excludedTagsCheckboxList > div');
+      items.forEach(item => {
+        const text = (item.textContent || '').toLowerCase();
+        item.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    });
+
+    document.getElementById('addCustomExcludedTagBtn')?.addEventListener('click', () => {
+      const searchInput = document.getElementById('excludedTagSearchInput');
+      const val = (searchInput?.value || '').trim();
+      if (!val) return;
+
+      const currentVal = document.getElementById('excludedTagsInput')?.value || '';
+      const tags = parseExcludedTagsString(currentVal);
+      if (!tags.map(t => t.toLowerCase()).includes(val.toLowerCase())) {
+        tags.push(val);
+      }
+      const exInput = document.getElementById('excludedTagsInput');
+      if (exInput) exInput.value = tags.join(', ');
+      if (searchInput) searchInput.value = '';
+
+      populateExcludedTagsCheckboxes();
+      syncExcludedTagsToDropdown();
+      saveState();
+    });
+
+    document.getElementById('selectStandardExcludedTags')?.addEventListener('click', () => {
+      document.querySelectorAll('#excludedTagsCheckboxList input[type=checkbox]').forEach(cb => {
+        cb.checked = STANDARD_EXCLUDED_TAGS.includes(cb.value.toLowerCase());
+      });
+      syncExcludedTagsFromCheckboxes();
+      syncExcludedTagsToDropdown();
+      saveState();
+    });
+
+    document.getElementById('selectAllExcludedTags')?.addEventListener('click', () => {
+      document.querySelectorAll('#excludedTagsCheckboxList input[type=checkbox]').forEach(cb => cb.checked = true);
+      syncExcludedTagsFromCheckboxes();
+      syncExcludedTagsToDropdown();
+      saveState();
+    });
+
+    document.getElementById('selectNoneExcludedTags')?.addEventListener('click', () => {
+      document.querySelectorAll('#excludedTagsCheckboxList input[type=checkbox]').forEach(cb => cb.checked = false);
+      syncExcludedTagsFromCheckboxes();
+      syncExcludedTagsToDropdown();
+      saveState();
+    });
+
+    document.getElementById('excludedTagsInput')?.addEventListener('input', () => {
+      populateExcludedTagsCheckboxes();
+      syncExcludedTagsToDropdown();
+      saveState();
+    });
+
     // Settings Logic
     const settingsModal = document.getElementById('settingsModal');
+
+    function ensureSubjectsPopulatedInSettings() {
+      const container = document.getElementById('subjectCheckboxList');
+      const hasBoxes = container && container.querySelectorAll('input[type=checkbox]').length > 0;
+      if (!hasBoxes) {
+        const subjects = window.EDN_AVAILABLE_SUBJECTS || STATE.data?.meta?.available_subjects;
+        if (subjects && subjects.length > 0) {
+          populateSubjectCheckboxes(subjects);
+        }
+      }
+    }
+
+    function ensureExcludedTagsPopulatedInSettings() {
+      populateExcludedTagsCheckboxes();
+    }
+
     document.getElementById('settingsBtn').addEventListener('click', () => {
       settingsModal.style.display = 'flex';
+      ensureSubjectsPopulatedInSettings();
+      ensureExcludedTagsPopulatedInSettings();
+      syncSettingsControlsFromInputs();
     });
     document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+      settingsModal.style.display = 'none';
+    });
+    document.getElementById('settingsCloseXBtn')?.addEventListener('click', () => {
       settingsModal.style.display = 'none';
     });
     document.getElementById('saveSettingsBtn').addEventListener('click', () => {
@@ -1565,11 +2573,21 @@
       });
       updateSubjectTriggerLabel();
 
-      // 3. Save state (will read from settings checkboxes via function)
+      // 3. Sync excluded tags to main dropdown
+      syncExcludedTagsToDropdown();
+      updateExcludedTagsTriggerLabel();
+
+      // 4. Save state
       saveState();
 
       settingsModal.style.display = 'none';
-      if (els.applyBtn) els.applyBtn.click();
+
+      const isHistoryActive = document.getElementById('tabHistory')?.classList.contains('active');
+      if (isHistoryActive) {
+        loadHistoryForecastData();
+      } else {
+        if (els.applyBtn) els.applyBtn.click();
+      }
     });
 
     // Close on Escape key
@@ -1579,6 +2597,163 @@
           settingsModal.style.display = 'none';
         }
       }
+    });
+
+    // Modal Tabs Navigation
+    document.querySelectorAll('.settings-modal-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.settings-modal-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.settings-tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const targetId = btn.getAttribute('data-settings-tab');
+        const targetPane = document.getElementById(targetId);
+        if (targetPane) targetPane.classList.add('active');
+        if (targetId === 'tabSettingsOverview') {
+          ensureSubjectsPopulatedInSettings();
+          ensureExcludedTagsPopulatedInSettings();
+        }
+      });
+    });
+
+    // Subject Search in Settings
+    document.getElementById('subjectSearchInput')?.addEventListener('input', (e) => {
+      const q = (e.target.value || '').toLowerCase().trim();
+      const items = document.querySelectorAll('#subjectCheckboxList > div');
+      items.forEach(item => {
+        const text = (item.textContent || '').toLowerCase();
+        item.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    });
+
+    function updateSubjectActiveCount() {
+      const total = document.querySelectorAll('#subjectCheckboxList input[type=checkbox]').length;
+      const checked = document.querySelectorAll('#subjectCheckboxList input[type=checkbox]:checked').length;
+      const badge = document.getElementById('subjectActiveCountBadge');
+      if (badge) {
+        badge.textContent = `${checked} / ${total} sélectionnée(s)`;
+      }
+    }
+
+    // Sliders & Controls Synchronization
+    function initSettingsControls() {
+      const sliderConfigs = [
+        { rangeId: 'rangeThreshItems', inputId: 'threshItemsInput', badgeId: 'badgeThreshItems', fmt: v => `${Math.round(v)} %`, toVal: v => v / 100 },
+        { rangeId: 'rangeThreshSdd', inputId: 'threshSddInput', badgeId: 'badgeThreshSdd', fmt: v => `${Math.round(v)} %`, toVal: v => v / 100 },
+        { rangeId: 'rangeThreshSubj', inputId: 'threshSubjInput', badgeId: 'badgeThreshSubj', fmt: v => `${Math.round(v)} %`, toVal: v => v / 100 },
+        { rangeId: 'rangeOverlap', inputId: 'subjectOverlapThreshold', badgeId: 'badgeOverlap', fmt: v => `${Math.round(v)} %`, toVal: v => v / 100 },
+        { rangeId: 'rangeMastery', inputId: 'colorThMastery', badgeId: 'badgeMastery', fmt: v => `≥ ${Math.round(v)} %`, toVal: v => v / 100 },
+        { rangeId: 'rangeRatio', inputId: 'colorThRatio', badgeId: 'badgeRatio', fmt: v => `≥ ${Math.round(v)} %`, toVal: v => v / 100 },
+        { rangeId: 'rangeTotalRatio', inputId: 'colorThTotalRatio', badgeId: 'badgeTotalRatio', fmt: v => `≥ ${Math.round(v)} %`, toVal: v => v / 100 },
+        { rangeId: 'rangeCrit', inputId: 'critThresholdInput', badgeId: 'badgeCrit', fmt: v => `Critique si > ${Math.round(v)} %`, toVal: v => v / 100 }
+      ];
+
+      sliderConfigs.forEach(cfg => {
+        const range = document.getElementById(cfg.rangeId);
+        const input = document.getElementById(cfg.inputId);
+        const badge = document.getElementById(cfg.badgeId);
+        if (!range || !input) return;
+
+        range.addEventListener('input', () => {
+          const val = parseFloat(range.value);
+          input.value = cfg.toVal(val);
+          if (badge) badge.textContent = cfg.fmt(val);
+        });
+      });
+
+      const winInput = document.getElementById('windowDaysInput');
+      const badgeWin = document.getElementById('badgeWindowDays');
+      if (winInput && badgeWin) {
+        winInput.addEventListener('input', () => {
+          badgeWin.textContent = `${winInput.value || 0} j`;
+        });
+      }
+
+      const ivlInput = document.getElementById('matureIvlInput');
+      const badgeIvl = document.getElementById('badgeMatureIvl');
+      if (ivlInput && badgeIvl) {
+        ivlInput.addEventListener('input', () => {
+          badgeIvl.textContent = `${ivlInput.value || 0} j`;
+        });
+      }
+
+      document.querySelectorAll('[data-set-window]').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const val = chip.getAttribute('data-set-window');
+          if (winInput) {
+            winInput.value = val;
+            if (badgeWin) badgeWin.textContent = `${val} j`;
+          }
+        });
+      });
+    }
+
+    function syncSettingsControlsFromInputs() {
+      const sliderConfigs = [
+        { rangeId: 'rangeThreshItems', inputId: 'threshItemsInput', badgeId: 'badgeThreshItems', fmt: v => `${Math.round(v)} %`, fromVal: v => Math.round(v * 100) },
+        { rangeId: 'rangeThreshSdd', inputId: 'threshSddInput', badgeId: 'badgeThreshSdd', fmt: v => `${Math.round(v)} %`, fromVal: v => Math.round(v * 100) },
+        { rangeId: 'rangeThreshSubj', inputId: 'threshSubjInput', badgeId: 'badgeThreshSubj', fmt: v => `${Math.round(v)} %`, fromVal: v => Math.round(v * 100) },
+        { rangeId: 'rangeOverlap', inputId: 'subjectOverlapThreshold', badgeId: 'badgeOverlap', fmt: v => `${Math.round(v)} %`, fromVal: v => Math.round(v * 100) },
+        { rangeId: 'rangeMastery', inputId: 'colorThMastery', badgeId: 'badgeMastery', fmt: v => `≥ ${Math.round(v)} %`, fromVal: v => Math.round(v * 100) },
+        { rangeId: 'rangeRatio', inputId: 'colorThRatio', badgeId: 'badgeRatio', fmt: v => `≥ ${Math.round(v)} %`, fromVal: v => Math.round(v * 100) },
+        { rangeId: 'rangeTotalRatio', inputId: 'colorThTotalRatio', badgeId: 'badgeTotalRatio', fmt: v => `≥ ${Math.round(v)} %`, fromVal: v => Math.round(v * 100) },
+        { rangeId: 'rangeCrit', inputId: 'critThresholdInput', badgeId: 'badgeCrit', fmt: v => `Critique si > ${Math.round(v)} %`, fromVal: v => Math.round(v * 100) }
+      ];
+
+      sliderConfigs.forEach(cfg => {
+        const range = document.getElementById(cfg.rangeId);
+        const input = document.getElementById(cfg.inputId);
+        const badge = document.getElementById(cfg.badgeId);
+        if (!range || !input) return;
+        const rawVal = parseFloat(input.value);
+        if (!isNaN(rawVal)) {
+          const pct = cfg.fromVal(rawVal);
+          range.value = pct;
+          if (badge) badge.textContent = cfg.fmt(pct);
+        }
+      });
+
+      const winInput = document.getElementById('windowDaysInput');
+      const badgeWin = document.getElementById('badgeWindowDays');
+      if (winInput && badgeWin) {
+        badgeWin.textContent = `${winInput.value || 1000} j`;
+      }
+
+      const ivlInput = document.getElementById('matureIvlInput');
+      const badgeIvl = document.getElementById('badgeMatureIvl');
+      if (ivlInput && badgeIvl) {
+        badgeIvl.textContent = `${ivlInput.value || 21} j`;
+      }
+
+      // Sync excluded tags input
+      const exInput = document.getElementById('excludedTagsInput');
+      if (exInput && window.EDN_STATE_CACHE?.settings?.excludedTags !== undefined) {
+        exInput.value = window.EDN_STATE_CACHE.settings.excludedTags;
+      }
+
+      populateExcludedTagsCheckboxes();
+      syncExcludedTagsToDropdown();
+      updateSubjectActiveCount();
+    }
+
+    initSettingsControls();
+
+    // Reset to defaults button handler
+    document.getElementById('resetSettingsDefaultBtn')?.addEventListener('click', () => {
+      if (!confirm("Rétablir les réglages recommandés par défaut ?")) return;
+      document.getElementById('colorThMastery').value = 0.7;
+      document.getElementById('colorThRatio').value = 0.7;
+      document.getElementById('colorThTotalRatio').value = 0.6;
+      document.getElementById('critThresholdInput').value = 0.8;
+      document.getElementById('subjectOverlapThreshold').value = 0.15;
+      document.getElementById('threshItemsInput').value = 0.4;
+      document.getElementById('threshSddInput').value = 0.5;
+      document.getElementById('threshSubjInput').value = 0.4;
+      document.getElementById('windowDaysInput').value = 1000;
+      document.getElementById('matureIvlInput').value = 21;
+      document.getElementById('selectedDeckSelect').value = "__AUTO__";
+      const exInput = document.getElementById('excludedTagsInput');
+      if (exInput) exInput.value = "";
+      syncSettingsControlsFromInputs();
     });
 
     // === PRESET BUTTON HANDLERS ===
@@ -1677,12 +2852,16 @@
       const selectedPreset = document.getElementById('subjectPreset')?.value || "";
 
       // 2. Robust state construction
+      const isHistoryActive = document.getElementById('tabHistory')?.classList.contains('active');
+      const rawExcluded = document.getElementById('excludedTagsInput')?.value || "";
       const state = {
         settings: {
+          activeTab: isHistoryActive ? 'history' : 'overview',
           mode: els.scopeSelect.value,
           rang: els.rangMode.value,
           includeChildren: els.includeChildren.checked,
           metric: els.metricSelect.value,
+          selectedDeck: document.getElementById('selectedDeckSelect')?.value || "__AUTO__",
           windowDays: document.getElementById('windowDaysInput')?.value,
           matureIvl: document.getElementById('matureIvlInput')?.value,
           sortField: STATE.sortField,
@@ -1691,7 +2870,8 @@
           selectedSubjects: getSelectedSubjects(),
           selectedPreset: selectedPreset,
           filterBySubject: document.getElementById('filterBySubject')?.checked || false,
-          excludePediatric: document.getElementById('excludePediatric')?.checked || false,
+          excludePediatric: rawExcluded.toLowerCase().includes("pédiatrie") || rawExcluded.toLowerCase().includes("pediatrie"),
+          excludedTags: rawExcluded,
           colorThMastery: parseFloat(document.getElementById('colorThMastery')?.value) || 0.7,
           colorThRatio: parseFloat(document.getElementById('colorThRatio')?.value) || 0.7,
           colorThTotalRatio: parseFloat(document.getElementById('colorThTotalRatio')?.value) || 0.6,
@@ -1699,7 +2879,10 @@
           subjectOverlapThreshold: parseFloat(document.getElementById('subjectOverlapThreshold')?.value) || 0.15,
           threshItems: parseFloat(document.getElementById('threshItemsInput')?.value) || 0.4,
           threshSdd: parseFloat(document.getElementById('threshSddInput')?.value) || 0.5,
-          threshSubj: parseFloat(document.getElementById('threshSubjInput')?.value) || 0.4
+          threshSubj: parseFloat(document.getElementById('threshSubjInput')?.value) || 0.4,
+          histWindowDays: document.getElementById('histWindowSelect')?.value || "70",
+          forecastWindowDays: document.getElementById('forecastWindowSelect')?.value || "30",
+          backlogViewMode: currentBacklogMode || "split"
         },
         presets: presets
       };
@@ -1719,6 +2902,28 @@
       pycmd('save_state ' + JSON.stringify(state));
     }
 
+    function populateDeckSelect(decks, currentSelected) {
+      const sel = document.getElementById('selectedDeckSelect');
+      if (!sel || !decks) return;
+      const curVal = currentSelected || sel.value || "__AUTO__";
+      while (sel.options.length > 2) sel.remove(2);
+      decks.forEach(item => {
+        const opt = document.createElement('option');
+        const dname = (typeof item === 'object' && item !== null) ? item.name : item;
+        const isFiltered = (typeof item === 'object' && item !== null) ? !!item.filtered : false;
+        opt.value = dname;
+        opt.textContent = dname;
+        if (isFiltered) {
+          opt.style.color = '#0284c7';
+          opt.style.fontWeight = '500';
+        } else {
+          opt.style.color = 'inherit';
+        }
+        sel.appendChild(opt);
+      });
+      sel.value = curVal;
+    }
+
     function getCheckedSubjectsInSettings() {
       // First check if we have checkboxes populated
       const checkboxes = document.querySelectorAll('#subjectCheckboxList input[type=checkbox]:checked');
@@ -1727,22 +2932,26 @@
       }
       // Fallback to pending subjects (used at startup before checkboxes are populated)
       if (window.EDN_PENDING_ENABLED_SUBJECTS && window.EDN_PENDING_ENABLED_SUBJECTS.length > 0) {
-        console.log("[getCheckedSubjectsInSettings] Using pending subjects:", window.EDN_PENDING_ENABLED_SUBJECTS.length);
         return window.EDN_PENDING_ENABLED_SUBJECTS;
       }
-      return [];
+      return window.EDN_STATE_CACHE?.settings?.enabledSubjects || [];
     }
 
     function getSelectedSubjects() {
       // Main dropdown checkboxes
-      return Array.from(document.querySelectorAll('#subjectList input[type=checkbox]:checked'))
-        .map(cb => cb.value);
+      const checkboxes = document.querySelectorAll('#subjectList input[type=checkbox]:checked');
+      if (checkboxes.length > 0) {
+        return Array.from(checkboxes).map(cb => cb.value);
+      }
+      if (window.EDN_PENDING_SELECTED_SUBJECTS && window.EDN_PENDING_SELECTED_SUBJECTS.length > 0) {
+        return window.EDN_PENDING_SELECTED_SUBJECTS;
+      }
+      return window.EDN_STATE_CACHE?.settings?.selectedSubjects || [];
     }
-
-    // Debug storage button listener removed for production
 
     function loadPresets() { return window.EDN_STATE_CACHE?.presets || {}; }
     function savePresets(presets) {
+      window.EDN_STATE_CACHE = window.EDN_STATE_CACHE || { presets: {}, settings: {} };
       window.EDN_STATE_CACHE.presets = presets;
       saveState();
     }
@@ -1768,6 +2977,8 @@
     window.EDN_receiveState = function (state) {
       console.log(">>> [EDN_receiveState] Initial data from Python:", state);
 
+      window.EDN_STATE_CACHE = window.EDN_STATE_CACHE || { presets: {}, settings: {} };
+
       const isIncomingEmpty = !state || (Object.keys(state.settings || {}).length === 0 && Object.keys(state.presets ||
         {}).length === 0);
 
@@ -1779,20 +2990,36 @@
         if (state.settings) window.EDN_STATE_CACHE.settings = state.settings;
       }
 
+      if (state?.meta?.available_subjects) {
+        window.EDN_AVAILABLE_SUBJECTS = state.meta.available_subjects;
+      }
+      if (state?.meta?.available_decks) {
+        window.EDN_AVAILABLE_DECKS = state.meta.available_decks;
+      }
+      if (state?.meta?.available_tags) {
+        window.EDN_AVAILABLE_TAGS = state.meta.available_tags;
+      }
+
       window.EDN_STATE_LOADED = true; // UNLOCK SAVING
 
-      const s = window.EDN_STATE_CACHE.settings;
-      if (s) {
+      const s = (window.EDN_STATE_CACHE && window.EDN_STATE_CACHE.settings) ? window.EDN_STATE_CACHE.settings : (state && state.settings ? state.settings : {});
+      let activeTab = 'overview';
+      if (s && Object.keys(s).length > 0) {
         if (s.mode) els.scopeSelect.value = s.mode;
         if (s.rang) els.rangMode.value = s.rang;
         if (s.includeChildren !== undefined) els.includeChildren.checked = s.includeChildren;
-        if (s.excludePediatric !== undefined) {
-          const epCb = document.getElementById('excludePediatric');
-          if (epCb) epCb.checked = s.excludePediatric;
+        if (s.excludedTags !== undefined) {
+          const exInput = document.getElementById('excludedTagsInput');
+          if (exInput) exInput.value = s.excludedTags;
         }
         if (s.metric) {
           els.metricSelect.value = s.metric;
           STATE.chartMetric = s.metric;
+        }
+        if (s.selectedDeck) {
+          const ds = document.getElementById('selectedDeckSelect');
+          if (ds) ds.value = s.selectedDeck;
+          window.EDN_PENDING_SELECTED_DECK = s.selectedDeck;
         }
         if (s.windowDays) document.getElementById('windowDaysInput').value = s.windowDays;
         if (s.matureIvl) document.getElementById('matureIvlInput').value = s.matureIvl;
@@ -1814,10 +3041,48 @@
         if (s.threshItems !== undefined) document.getElementById('threshItemsInput').value = s.threshItems;
         if (s.threshSdd !== undefined) document.getElementById('threshSddInput').value = s.threshSdd;
         if (s.threshSubj !== undefined) document.getElementById('threshSubjInput').value = s.threshSubj;
+
+        // Restore History & Forecast settings
+        if (s.histWindowDays) {
+          const hw = document.getElementById('histWindowSelect');
+          if (hw) hw.value = s.histWindowDays;
+        }
+        if (s.forecastWindowDays) {
+          const fw = document.getElementById('forecastWindowSelect');
+          if (fw) fw.value = s.forecastWindowDays;
+        }
+        if (s.backlogViewMode) {
+          switchBacklogChartView(s.backlogViewMode, true);
+        }
+
+        // Restore last active tab
+        if (s.activeTab === 'history') {
+          activeTab = 'history';
+          document.getElementById('tabOverview')?.classList.remove('active');
+          document.getElementById('tabHistory')?.classList.add('active');
+          document.getElementById('overview').style.display = 'none';
+          document.getElementById('historyForecastSection').style.display = 'block';
+          const tc = document.querySelector('.top-controls');
+          if (tc) tc.style.display = 'none';
+          loadHistoryForecastData();
+        } else {
+          document.getElementById('tabOverview')?.classList.add('active');
+          document.getElementById('tabHistory')?.classList.remove('active');
+          document.getElementById('overview').style.display = 'block';
+          document.getElementById('historyForecastSection').style.display = 'none';
+          const tc = document.querySelector('.top-controls');
+          if (tc) tc.style.display = '';
+        }
       }
 
+      syncSettingsControlsFromInputs();
       populatePresetsDropdown();
       updateSubjectFilterVisibility();
+
+      // If we have available decks from Python state meta
+      if (state?.meta?.available_decks) {
+        populateDeckSelect(state.meta.available_decks, s.selectedDeck || "__AUTO__");
+      }
 
       // If we have available subjects, populate checkboxes
       const subjects = state?.meta?.available_subjects;
@@ -1825,24 +3090,25 @@
         populateSubjectCheckboxes(subjects);
       }
 
-      // If a preset was active, it will be handled by EDN_reload once subjects are available
-      console.log("Triggering Apply with restored settings (NO SAVE)...");
-      setTimeout(() => {
+      // Populate excluded tags checkboxes & dropdown
+      populateExcludedTagsCheckboxes();
+      syncExcludedTagsToDropdown();
+
+      // If overview is active, trigger apply with restored settings
+      if (activeTab !== 'history') {
+        console.log("Triggering Apply with restored settings (NO SAVE)...");
         triggerRecompute(true);
-      }, 300);
+      }
     };
 
     function requestStateFromPython() {
       pycmd('load_state');
     }
 
-
     // CSV Export
     document.getElementById('exportCsv').addEventListener('click', () => {
       pycmd('export_csv');
     });
-
-
 
     function triggerRecompute(skipSave = false) {
       console.log("triggerRecompute", skipSave ? "(SKIP SAVE)" : "(WITH SAVE)");
@@ -1861,14 +3127,17 @@
       else threshold = thSubj;
 
       const filterBySubject = document.getElementById('filterBySubject')?.checked || false;
+      const rawExcluded = document.getElementById('excludedTagsInput')?.value || window.EDN_STATE_CACHE?.settings?.excludedTags || "";
 
       const payload = {
         mode: mode,
         only_rang: els.rangMode.value === 'onlyA' ? 'A' : null,
         exclude_rang: els.rangMode.value === 'notA' ? 'A' : null,
         include_children: els.includeChildren.checked,
-        exclude_pediatric: document.getElementById('excludePediatric')?.checked || false,
+        exclude_pediatric: rawExcluded.toLowerCase().includes("pédiatrie") || rawExcluded.toLowerCase().includes("pediatrie"),
+        excluded_tags: rawExcluded,
         mask_threshold: threshold,
+        selected_deck: document.getElementById('selectedDeckSelect')?.value || window.EDN_STATE_CACHE?.settings?.selectedDeck || "__AUTO__",
         window_days: parseInt(document.getElementById('windowDaysInput')?.value) || 30,
         mature_ivl: parseInt(document.getElementById('matureIvlInput')?.value) || 21,
         subject_filter: mode === 'subject'
@@ -1922,6 +3191,7 @@
       const container = document.getElementById('subjectCheckboxList');
       if (!container || !subjects || subjects.length === 0) return;
 
+      window.EDN_AVAILABLE_SUBJECTS = subjects;
       const showChildren = document.getElementById('showSubjectChildren')?.checked || false;
 
       // Capture CURRENT INTERACTIVE state before clearing
@@ -1988,7 +3258,6 @@
         const onlyBtn = document.createElement('span');
         onlyBtn.textContent = 'Uniquement';
         onlyBtn.className = 'uniquement-btn';
-        onlyBtn.style.display = 'none';
         onlyBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -2000,9 +3269,6 @@
           syncSubjectsToDropdown();
           saveState();
         };
-
-        div.onmouseenter = () => onlyBtn.style.display = 'block';
-        div.onmouseleave = () => onlyBtn.style.display = 'none';
 
         div.appendChild(checkbox);
         div.appendChild(label);
@@ -2057,7 +3323,14 @@
       document.getElementById('metaBox').innerHTML = `<b>${modeLabel}:</b> ${meta.total_units || 0} — <b>Médiane Maîtrise:</b> ${pct(meta.median_mastery)}% — <b>Critiques:</b> ${meta.num_critical_items || 0}`;
 
 
+      if (meta.available_decks) {
+        window.EDN_AVAILABLE_DECKS = meta.available_decks;
+        const curDeck = window.EDN_STATE_CACHE?.settings?.selectedDeck || window.EDN_PENDING_SELECTED_DECK || meta.selected_deck || "__AUTO__";
+        populateDeckSelect(meta.available_decks, curDeck);
+      }
+
       if (meta.available_subjects) {
+        window.EDN_AVAILABLE_SUBJECTS = meta.available_subjects;
         // 1. Only populate checkboxes in settings ONCE on first load
         // This prevents resetting user's selection every time
         if (!window.EDN_SUBJECTS_POPULATED) {
@@ -2146,7 +3419,6 @@
             const onlyBtn = document.createElement('span');
             onlyBtn.textContent = 'Uniquement';
             onlyBtn.className = 'uniquement-btn-dropdown';
-            onlyBtn.style.display = 'none';
             onlyBtn.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -2157,9 +3429,6 @@
               saveState();
               if (els.applyBtn) els.applyBtn.click();
             };
-
-            label.onmouseenter = () => onlyBtn.style.display = 'block';
-            label.onmouseleave = () => onlyBtn.style.display = 'none';
 
             label.appendChild(cb);
             label.appendChild(spanText);
@@ -2183,6 +3452,7 @@
       });
 
       updateSubjectTriggerLabel();
+      updateSubjectActiveCount();
       console.log(`Synced ${checkedValues.length} subjects to main dropdown.`);
     }
 
@@ -2217,17 +3487,62 @@
     });
 
     // === HISTORY & FORECAST ON-TAP LOGIC ===
+    let currentBacklogMode = (function() {
+      try {
+        return localStorage.getItem('edn_backlog_view_mode') || 'split';
+      } catch(e) {
+        return 'split';
+      }
+    })();
     let histStatesChart = null;
     let histBacklogChart = null;
+    let histBacklogVolChart = null;
+    let histBacklogPerfChart = null;
     let forecastChartInstance = null;
+    let histBacklogTotalChart = null;
+    let lastHistoryData = null;
+
+    function switchBacklogChartView(mode, skipSave = false) {
+      currentBacklogMode = mode || 'split';
+      try {
+        localStorage.setItem('edn_backlog_view_mode', currentBacklogMode);
+      } catch(e) {}
+
+      const btnSplit = document.getElementById('btnBacklogSplit');
+      const btnComb = document.getElementById('btnBacklogCombined');
+      if (btnSplit) btnSplit.classList.toggle('active', currentBacklogMode === 'split');
+      if (btnComb) btnComb.classList.toggle('active', currentBacklogMode === 'combined');
+      
+      const splitView = document.getElementById('backlogSplitView');
+      const combView = document.getElementById('backlogCombinedView');
+      if (splitView && combView) {
+        if (currentBacklogMode === 'split') {
+          splitView.style.display = 'flex';
+          combView.style.display = 'none';
+        } else {
+          splitView.style.display = 'none';
+          combView.style.display = 'block';
+        }
+      }
+      
+      if (lastHistoryData) {
+        renderBacklogCharts(lastHistoryData);
+      }
+
+      if (!skipSave) {
+        saveState();
+      }
+    }
 
     function loadHistoryForecastData() {
-      const windowDays = parseInt(document.getElementById('histWindowSelect')?.value) || 90;
+      const windowDays = parseInt(document.getElementById('histWindowSelect')?.value) || 70;
       const forecastDays = parseInt(document.getElementById('forecastWindowSelect')?.value) || 30;
+      const selectedDeck = document.getElementById('selectedDeckSelect')?.value || window.EDN_STATE_CACHE?.settings?.selectedDeck || "__AUTO__";
       
       const payload = {
         window_days: windowDays,
-        forecast_days: forecastDays
+        forecast_days: forecastDays,
+        selected_deck: selectedDeck
       };
       
       console.log("Requesting history & forecast stats:", payload);
@@ -2241,6 +3556,7 @@
     };
 
     function renderHistoryCharts(data) {
+      lastHistoryData = data;
       const isNight = document.body ? document.body.classList.contains('nightMode') : false;
       const textColor = isNight ? '#e0e0e0' : '#333';
       const gridColor = isNight ? '#444' : '#ddd';
@@ -2261,18 +3577,8 @@
       const currentBacklog = hist.overdue[hist.overdue.length - 1];
       const totalMinutes = Math.round(hist.study_time_min.reduce((acc, v) => acc + v, 0));
       
-      // Reliability of retention: compare total reviews vs current backlog
-      // High revisions + low backlog = reliable retention measurement
-      const avgDailyRevs = totalRevs / Math.max(1, hist.reviews_count.filter(v => v > 0).length);
-      const reliabilityRatio = currentBacklog > 0 ? Math.min(1, avgDailyRevs / Math.max(1, currentBacklog)) : 1.0;
-      const reliabilityPct = Math.round(reliabilityRatio * 100);
-      let reliabilityLabel, reliabilityColor;
-      if (reliabilityPct >= 80) { reliabilityLabel = '✅ Fiable'; reliabilityColor = '#388e3c'; }
-      else if (reliabilityPct >= 50) { reliabilityLabel = '⚠️ Modérée'; reliabilityColor = '#f57c00'; }
-      else { reliabilityLabel = '❌ Peu fiable'; reliabilityColor = '#d32f2f'; }
-      
       const retentionColor = avgRetention >= 80 ? '#388e3c' : avgRetention >= 70 ? '#f57c00' : '#d32f2f';
-      document.getElementById('retentionStatsLabel').innerHTML = `Révisions : <b>${totalRevs}</b> — Rétention : <span style="color:${retentionColor}; font-weight:bold;">${avgRetention}%</span> — Fiabilité : <span style="color:${reliabilityColor}; font-weight:bold;" title="Fiabilité = Révisions/jour ÷ Retard. Haute fiabilité si peu de retard et bcp de révisions">${reliabilityLabel}</span>`;
+      document.getElementById('retentionStatsLabel').innerHTML = `Révisions : <b>${totalRevs}</b> — Rétention : <span style="color:${retentionColor}; font-weight:bold;">${avgRetention}%</span>`;
       const avgTimePerCard = totalRevs > 0 ? ((totalMinutes * 60) / totalRevs).toFixed(1) : '0';
       document.getElementById('backlogStatsLabel').innerHTML = `Retard : <span style="color:#d32f2f; font-weight:bold;">${currentBacklog} cartes</span> — Temps : <b>${totalMinutes} min</b> (~<b>${avgTimePerCard}s</b>/carte)`;
       
@@ -2281,7 +3587,7 @@
       const totalSimulated = Math.round(fore.simulated.reduce((acc, v) => acc + v, 0));
       document.getElementById('forecastStatsLabel').innerHTML = `Prévues : <b>${totalScheduled}</b> — FSRS Estimé : <b style="color:#2c7bb6;">${totalSimulated}</b>`;
 
-      // Chart 1: Évolution des États & Rétention
+      // Chart 1: Évolution des États
       if (histStatesChart) histStatesChart.destroy();
       const ctx1 = document.getElementById('histStatesChart').getContext('2d');
       
@@ -2300,47 +3606,34 @@
               data: hist.mature,
               backgroundColor: '#005500',
               stack: 'states',
-              order: 2
+              order: 1
             },
             {
               label: 'Récentes',
               data: hist.recent,
               backgroundColor: '#5cb85c',
               stack: 'states',
-              order: 2
+              order: 1
             },
             {
               label: 'En apprentissage',
               data: hist.learning,
               backgroundColor: '#f0ad4e',
               stack: 'states',
-              order: 2
+              order: 1
             },
             {
               label: 'Inédites',
               data: hist.new,
               backgroundColor: '#00aaff',
               stack: 'states',
-              order: 2
+              order: 1
             },
             {
               label: 'Suspendues',
               data: hist.suspended,
               backgroundColor: isNight ? '#555' : '#ccc',
               stack: 'states',
-              order: 2
-            },
-            {
-              label: 'Rétention réelle (%)',
-              data: retentionRates,
-              borderColor: '#e91e63',
-              backgroundColor: 'transparent',
-              type: 'line',
-              yAxisID: 'yRetention',
-              tension: 0.15,
-              spanGaps: true,
-              borderWidth: 2.5,
-              pointRadius: 2,
               order: 1
             }
           ]
@@ -2356,15 +3649,6 @@
               ticks: { color: textColor },
               title: { display: true, text: 'Nombre de cartes', color: textColor }
             },
-            yRetention: {
-              display: 'auto',
-              position: 'right',
-              min: 0,
-              max: 100,
-              grid: { display: false },
-              ticks: { color: '#e91e63', callback: (val) => `${val}%` },
-              title: { display: true, text: 'Rétention (%)', color: '#e91e63' }
-            },
             x: {
               grid: { display: false },
               ticks: { color: textColor, maxTicksLimit: 15 }
@@ -2373,20 +3657,7 @@
           plugins: {
             tooltip: {
               mode: 'index',
-              intersect: false,
-              callbacks: {
-                afterBody: function(tooltipItems) {
-                  const idx = tooltipItems[0]?.dataIndex;
-                  if (idx === undefined) return [];
-                  const revs = hist.reviews_count[idx] || 0;
-                  const overdue = hist.overdue[idx] || 0;
-                  if (revs > 0 && overdue > 0) {
-                    const rel = Math.min(100, Math.round(revs / Math.max(1, overdue) * 100));
-                    return ['Fiabilit\u00e9 r\u00e9tention: ' + rel + '%'];
-                  }
-                  return [];
-                }
-              }
+              intersect: false
             },
             legend: {
               position: 'bottom',
@@ -2397,106 +3668,7 @@
       });
 
       // Chart 2: Retard & Volume de Révisions
-      if (histBacklogChart) histBacklogChart.destroy();
-      const ctx2 = document.getElementById('histBacklogChart').getContext('2d');
-      
-      histBacklogChart = new Chart(ctx2, {
-        type: 'bar',
-        data: {
-          labels: hist.dates,
-          datasets: [
-            {
-              label: 'Révisions effectuées',
-              data: hist.reviews_count,
-              backgroundColor: '#93c47d',
-              yAxisID: 'y',
-              order: 2
-            },
-            {
-              label: 'Cartes en retard (Backlog)',
-              data: hist.overdue,
-              borderColor: '#d9534f',
-              backgroundColor: 'rgba(217, 83, 79, 0.05)',
-              borderWidth: 2,
-              type: 'line',
-              tension: 0.15,
-              yAxisID: 'y',
-              order: 1
-            },
-            {
-              label: 'Temps moyen (s/carte)',
-              data: hist.reviews_count.map((revs, idx) => {
-                const mins = hist.study_time_min[idx] || 0;
-                return revs > 0 ? parseFloat(((mins * 60) / revs).toFixed(1)) : null;
-              }),
-              borderColor: '#45818e',
-              backgroundColor: 'transparent',
-              borderWidth: 2,
-              type: 'line',
-              tension: 0.15,
-              spanGaps: true,
-              yAxisID: 'yTime',
-              hidden: false,
-              order: 3
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              grid: { color: gridColor },
-              ticks: { color: textColor },
-              title: { display: true, text: 'Nombre de cartes', color: textColor }
-            },
-            yTime: {
-              display: 'auto',
-              position: 'right',
-              beginAtZero: true,
-              grid: { display: false },
-              ticks: { color: '#45818e', callback: (val) => `${val}s` },
-              title: { display: true, text: 'Temps moyen (s/carte)', color: '#45818e' }
-            },
-            x: {
-              grid: { display: false },
-              ticks: { color: textColor, maxTicksLimit: 15 }
-            }
-          },
-          plugins: {
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              callbacks: {
-                afterBody: function(tooltipItems) {
-                  const idx = tooltipItems[0]?.dataIndex;
-                  if (idx === undefined) return [];
-                  const revs = hist.reviews_count[idx] || 0;
-                  const overdue = hist.overdue[idx] || 0;
-                  const mins = hist.study_time_min[idx] || 0;
-                  const lines = [];
-                  if (revs > 0 && overdue > 0) {
-                    const rel = Math.min(100, Math.round(revs / Math.max(1, overdue) * 100));
-                    lines.push('Fiabilité rétention: ' + rel + '%');
-                  }
-                  const chart = tooltipItems[0].chart;
-                  const isTimeDatasetVisible = chart ? chart.isDatasetVisible(2) : true;
-                  if (!isTimeDatasetVisible && revs > 0) {
-                    const avgSec = ((mins * 60) / revs).toFixed(1);
-                    lines.push('Temps moyen: ' + avgSec + ' s/carte');
-                  }
-                  return lines;
-                }
-              }
-            },
-            legend: {
-              position: 'bottom',
-              labels: { color: textColor, boxWidth: 12 }
-            }
-          }
-        }
-      });
+      renderBacklogCharts(data);
 
       // Chart 3: Prévisions FSRS
       if (forecastChartInstance) forecastChartInstance.destroy();
@@ -2543,20 +3715,7 @@
           plugins: {
             tooltip: {
               mode: 'index',
-              intersect: false,
-              callbacks: {
-                afterBody: function(tooltipItems) {
-                  const idx = tooltipItems[0]?.dataIndex;
-                  if (idx === undefined) return [];
-                  const revs = hist.reviews_count[idx] || 0;
-                  const overdue = hist.overdue[idx] || 0;
-                  if (revs > 0 && overdue > 0) {
-                    const rel = Math.min(100, Math.round(revs / Math.max(1, overdue) * 100));
-                    return ['Fiabilit\u00e9 r\u00e9tention: ' + rel + '%'];
-                  }
-                  return [];
-                }
-              }
+              intersect: false
             },
             legend: {
               position: 'bottom',
@@ -2567,6 +3726,382 @@
       });
     }
 
+    function renderBacklogCharts(data) {
+      const isNight = document.body ? document.body.classList.contains('nightMode') : false;
+      const textColor = isNight ? '#e0e0e0' : '#333';
+      const gridColor = isNight ? '#444' : '#ddd';
+      const hist = data.history;
+
+      // Ensure view containers and toggle buttons match currentBacklogMode
+      const splitView = document.getElementById('backlogSplitView');
+      const combView = document.getElementById('backlogCombinedView');
+      const btnSplit = document.getElementById('btnBacklogSplit');
+      const btnComb = document.getElementById('btnBacklogCombined');
+      if (splitView && combView) {
+        if (currentBacklogMode === 'split') {
+          splitView.style.display = 'flex';
+          combView.style.display = 'none';
+        } else {
+          splitView.style.display = 'none';
+          combView.style.display = 'block';
+        }
+      }
+      if (btnSplit) btnSplit.classList.toggle('active', currentBacklogMode === 'split');
+      if (btnComb) btnComb.classList.toggle('active', currentBacklogMode === 'combined');
+
+      const retentionRates = hist.reviews_count.map((c, idx) => {
+        if (c === 0) return null;
+        return Math.round((hist.correct_count[idx] / c) * 100);
+      });
+      
+      const avgTimePerCardData = hist.reviews_count.map((revs, idx) => {
+        const mins = hist.study_time_min[idx] || 0;
+        return revs > 0 ? parseFloat(((mins * 60) / revs).toFixed(1)) : null;
+      });
+
+      // Destroy previous chart instances
+      if (histBacklogChart) { histBacklogChart.destroy(); histBacklogChart = null; }
+      if (histBacklogTotalChart) { histBacklogTotalChart.destroy(); histBacklogTotalChart = null; }
+      if (histBacklogVolChart) { histBacklogVolChart.destroy(); histBacklogVolChart = null; }
+      if (histBacklogPerfChart) { histBacklogPerfChart.destroy(); histBacklogPerfChart = null; }
+
+      if (currentBacklogMode === 'split') {
+        // — Trend badge computation —
+        const overdueTrimmed = hist.overdue.filter(v => v > 0);
+        const trendBadgeEl = document.getElementById('backlogTrendBadge');
+        if (trendBadgeEl) {
+          if (overdueTrimmed.length >= 2) {
+            const half = Math.max(1, Math.floor(overdueTrimmed.length / 2));
+            const avgFirst = overdueTrimmed.slice(0, half).reduce((a, b) => a + b, 0) / half;
+            const avgLast  = overdueTrimmed.slice(-half).reduce((a, b) => a + b, 0) / half;
+            const delta = Math.round(avgLast - avgFirst);
+            if (delta > 0) {
+              trendBadgeEl.textContent = `↑ +${delta} cartes`;
+              trendBadgeEl.style.color = '#d32f2f';
+            } else if (delta < 0) {
+              trendBadgeEl.textContent = `↓ ${delta} cartes`;
+              trendBadgeEl.style.color = '#388e3c';
+            } else {
+              trendBadgeEl.textContent = '→ Stable';
+              trendBadgeEl.style.color = '#888';
+            }
+          } else {
+            trendBadgeEl.textContent = '';
+          }
+        }
+
+        // Canvas 1: Volume de révisions (barres) + Backlog total (ligne) — double axe Y
+        const ctxVol = document.getElementById('histBacklogVolChart')?.getContext('2d');
+        if (ctxVol) {
+          histBacklogVolChart = new Chart(ctxVol, {
+            type: 'bar',
+            data: {
+              labels: hist.dates,
+              datasets: [
+                {
+                  label: 'Révisions effectuées',
+                  data: hist.reviews_count,
+                  backgroundColor: isNight ? 'rgba(102,187,106,0.7)' : 'rgba(129,199,132,0.7)',
+                  borderRadius: 3,
+                  yAxisID: 'yBacklog',
+                  order: 2
+                },
+                {
+                  label: 'Cartes en retard (Backlog)',
+                  data: hist.overdue,
+                  borderColor: '#ef5350',
+                  backgroundColor: 'rgba(239, 83, 80, 0.1)',
+                  borderWidth: 2.5,
+                  fill: true,
+                  type: 'line',
+                  tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 5,
+                  pointBackgroundColor: '#ef5350',
+                  yAxisID: 'yBacklog',
+                  order: 1
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              scales: {
+                yBacklog: {
+                  type: 'linear',
+                  position: 'left',
+                  beginAtZero: true,
+                  grid: { color: gridColor },
+                  ticks: { color: textColor },
+                  title: { display: true, text: 'Cartes', color: textColor },
+                  afterFit: (axis) => { axis.width = 65; }
+                },
+                // Axe fantôme à droite pour aligner la zone de dessin avec le graphique Performance (qui a yTime à droite)
+                yPhantom: {
+                  type: 'linear',
+                  position: 'right',
+                  display: true,
+                  grid: { display: false },
+                  ticks: { display: false },
+                  title: { display: false },
+                  border: { display: false },
+                  afterFit: (axis) => { axis.width = 65; }
+                },
+                x: { grid: { display: false }, ticks: { color: textColor, maxTicksLimit: 15 } }
+              },
+              plugins: {
+                legend: { position: 'top', align: 'end', labels: { color: textColor, boxWidth: 10, padding: 8 } },
+                tooltip: { mode: 'index', intersect: false }
+              },
+              onHover: (event, chartElement) => {
+                if (!histBacklogPerfChart) return;
+                if (chartElement && chartElement.length > 0) {
+                  const index = chartElement[0].index;
+                  histBacklogPerfChart.setActiveElements([
+                    { datasetIndex: 0, index }, { datasetIndex: 1, index }
+                  ]);
+                  histBacklogPerfChart.tooltip.setActiveElements([
+                    { datasetIndex: 0, index }, { datasetIndex: 1, index }
+                  ], { x: event.x || 0, y: event.y || 0 });
+                  histBacklogPerfChart.update('none');
+                } else {
+                  histBacklogPerfChart.setActiveElements([]);
+                  histBacklogPerfChart.tooltip.setActiveElements([], { x: 0, y: 0 });
+                  histBacklogPerfChart.update('none');
+                }
+              }
+            }
+          });
+        }
+
+        // Canvas 2: Performance (Rétention % & Temps moyen)
+        const ctxPerf = document.getElementById('histBacklogPerfChart')?.getContext('2d');
+        if (ctxPerf) {
+          histBacklogPerfChart = new Chart(ctxPerf, {
+            type: 'line',
+            data: {
+              labels: hist.dates,
+              datasets: [
+                {
+                  label: 'Taux de rétention réelle (%)',
+                  data: retentionRates,
+                  borderColor: '#ec407a',
+                  backgroundColor: 'transparent',
+                  borderWidth: 2.2,
+                  tension: 0.25,
+                  spanGaps: true,
+                  pointRadius: 0,
+                  pointHoverRadius: 5,
+                  pointBackgroundColor: '#ec407a',
+                  yAxisID: 'yRetention'
+                },
+                {
+                  label: 'Temps moyen (s/carte)',
+                  data: avgTimePerCardData,
+                  borderColor: '#26a69a',
+                  backgroundColor: 'transparent',
+                  borderWidth: 2,
+                  tension: 0.25,
+                  spanGaps: true,
+                  pointRadius: 0,
+                  pointHoverRadius: 5,
+                  pointBackgroundColor: '#26a69a',
+                  yAxisID: 'yTime'
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              scales: {
+                yRetention: {
+                  type: 'linear',
+                  position: 'left',
+                  min: 0,
+                  max: 100,
+                  grid: { color: gridColor },
+                  ticks: { color: '#ec407a', callback: (val) => `${val}%` },
+                  title: { display: true, text: 'Rétention (%)', color: '#ec407a' },
+                  afterFit: (axis) => { axis.width = 65; }
+                },
+                yTime: {
+                  type: 'linear',
+                  position: 'right',
+                  beginAtZero: true,
+                  grid: { display: false },
+                  ticks: { color: '#26a69a', callback: (val) => `${val}s` },
+                  title: { display: true, text: 'Temps moyen (s/carte)', color: '#26a69a' },
+                  afterFit: (axis) => { axis.width = 65; }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { color: textColor, maxTicksLimit: 15 }
+                }
+              },
+              plugins: {
+                legend: {
+                  position: 'top',
+                  align: 'end',
+                  labels: { color: textColor, boxWidth: 10, padding: 8 }
+                },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false
+                }
+              },
+              onHover: (event, chartElement) => {
+                const syncCharts = [histBacklogVolChart].filter(Boolean);
+                if (chartElement && chartElement.length > 0) {
+                  const index = chartElement[0].index;
+                  syncCharts.forEach(c => {
+                    c.setActiveElements(c.data.datasets.map((_, di) => ({ datasetIndex: di, index })));
+                    c.tooltip.setActiveElements(c.data.datasets.map((_, di) => ({ datasetIndex: di, index })), { x: event.x || 0, y: event.y || 0 });
+                    c.update('none');
+                  });
+                } else {
+                  syncCharts.forEach(c => {
+                    c.setActiveElements([]);
+                    c.tooltip.setActiveElements([], { x: 0, y: 0 });
+                    c.update('none');
+                  });
+                }
+              }
+            }
+          });
+        }
+
+        // Attach mouseleave to clear hover on both charts
+        const canvasVolEl = document.getElementById('histBacklogVolChart');
+        const canvasPerfEl = document.getElementById('histBacklogPerfChart');
+        const clearAllBacklogHover = () => {
+          [histBacklogVolChart, histBacklogPerfChart].forEach(c => {
+            if (!c) return;
+            c.setActiveElements([]);
+            c.tooltip.setActiveElements([], { x: 0, y: 0 });
+            c.update('none');
+          });
+        };
+        if (canvasVolEl) canvasVolEl.onmouseleave = clearAllBacklogHover;
+        if (canvasPerfEl) canvasPerfEl.onmouseleave = clearAllBacklogHover;
+
+      } else {
+        // Combined View (Single canvas with clean styling, no fixed dots, smooth curves)
+        const ctx2 = document.getElementById('histBacklogChart')?.getContext('2d');
+        if (ctx2) {
+          histBacklogChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+              labels: hist.dates,
+              datasets: [
+                {
+                  label: 'Révisions effectuées',
+                  data: hist.reviews_count,
+                  backgroundColor: isNight ? '#66bb6a' : '#81c784',
+                  borderRadius: 3,
+                  yAxisID: 'y',
+                  order: 4
+                },
+                {
+                  label: 'Cartes en retard (Backlog)',
+                  data: hist.overdue,
+                  borderColor: '#ef5350',
+                  backgroundColor: 'rgba(239, 83, 80, 0.05)',
+                  borderWidth: 2,
+                  type: 'line',
+                  tension: 0.25,
+                  pointRadius: 0,
+                  pointHoverRadius: 5,
+                  pointBackgroundColor: '#ef5350',
+                  yAxisID: 'y',
+                  order: 3
+                },
+                {
+                  label: 'Taux de rétention réelle (%)',
+                  data: retentionRates,
+                  borderColor: '#ec407a',
+                  backgroundColor: 'transparent',
+                  type: 'line',
+                  yAxisID: 'yRetention',
+                  tension: 0.25,
+                  spanGaps: true,
+                  borderWidth: 2.5,
+                  pointRadius: 0,
+                  pointHoverRadius: 5,
+                  pointBackgroundColor: '#ec407a',
+                  order: 1
+                },
+                {
+                  label: 'Temps moyen (s/carte)',
+                  data: avgTimePerCardData,
+                  borderColor: '#26a69a',
+                  backgroundColor: 'transparent',
+                  borderWidth: 2,
+                  type: 'line',
+                  tension: 0.25,
+                  spanGaps: true,
+                  pointRadius: 0,
+                  pointHoverRadius: 5,
+                  pointBackgroundColor: '#26a69a',
+                  yAxisID: 'yTime',
+                  order: 2
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: { color: gridColor },
+                  ticks: { color: textColor },
+                  title: { display: true, text: 'Nombre de cartes', color: textColor }
+                },
+                yRetention: {
+                  display: 'auto',
+                  position: 'right',
+                  min: 0,
+                  max: 100,
+                  grid: { display: false },
+                  ticks: { color: '#ec407a', callback: (val) => `${val}%` },
+                  title: { display: true, text: 'Rétention (%)', color: '#ec407a' }
+                },
+                yTime: {
+                  display: 'auto',
+                  position: 'right',
+                  beginAtZero: true,
+                  grid: { display: false },
+                  ticks: { color: '#26a69a', callback: (val) => `${val}s` },
+                  title: { display: true, text: 'Temps moyen (s/carte)', color: '#26a69a' }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { color: textColor, maxTicksLimit: 15 }
+                }
+              },
+              plugins: {
+                tooltip: {
+                  mode: 'index',
+                  intersect: false,
+                  callbacks: {
+                    afterBody: function(tooltipItems) {
+                      return [];
+                    }
+                  }
+                },
+                legend: {
+                  position: 'bottom',
+                  labels: { color: textColor, boxWidth: 12 }
+                }
+              }
+            }
+          });
+        }
+      }
+    }
+
     // Tab switcher event listeners
     const topControls = document.querySelector('.top-controls');
     document.getElementById('tabOverview')?.addEventListener('click', () => {
@@ -2575,6 +4110,11 @@
       document.getElementById('overview').style.display = 'block';
       document.getElementById('historyForecastSection').style.display = 'none';
       if (topControls) topControls.style.display = '';
+      saveState();
+      // If overview data has not been computed yet (e.g. started on history tab), compute it now
+      if (!STATE.data || !STATE.data.items || STATE.data.items.length === 0) {
+        triggerRecompute(true);
+      }
     });
 
     document.getElementById('tabHistory')?.addEventListener('click', () => {
@@ -2584,11 +4124,26 @@
       document.getElementById('historyForecastSection').style.display = 'block';
       if (topControls) topControls.style.display = 'none';
       loadHistoryForecastData();
+      saveState();
     });
 
-    document.getElementById('refreshHistBtn')?.addEventListener('click', loadHistoryForecastData);
-    document.getElementById('histWindowSelect')?.addEventListener('change', loadHistoryForecastData);
-    document.getElementById('forecastWindowSelect')?.addEventListener('change', loadHistoryForecastData);
+    let _historyReloadTimer = null;
+    const triggerHistoryReload = () => {
+      loadHistoryForecastData();
+      saveState();
+    };
+    // Debounced version: waits 600ms after user stops typing
+    const triggerHistoryReloadDebounced = () => {
+      clearTimeout(_historyReloadTimer);
+      _historyReloadTimer = setTimeout(triggerHistoryReload, 600);
+    };
+
+    // 'change' fires on Enter or blur → immediate reload
+    // 'input' fires on every keystroke → debounced
+    document.getElementById('histWindowSelect')?.addEventListener('change', triggerHistoryReload);
+    document.getElementById('histWindowSelect')?.addEventListener('input', triggerHistoryReloadDebounced);
+    document.getElementById('forecastWindowSelect')?.addEventListener('change', triggerHistoryReload);
+    document.getElementById('forecastWindowSelect')?.addEventListener('input', triggerHistoryReloadDebounced);
 
     // === INITIALIZATION ===
     function EDN_init() {
@@ -2606,9 +4161,15 @@
       updateSubjectFilterVisibility();
       els.metricSelect.value = 'studied_total_ratio'; // Default: Appris/Total
 
+      // 1b. Apply initial backlog view mode (from localStorage or default)
+      switchBacklogChartView(currentBacklogMode, true);
+
       // 2. Request saved state from Python (will overwrite defaults if state exists)
       console.log("Requesting saved state from Python...");
       requestStateFromPython();
+
+      // Initialize chart context menu
+      initContextMenu();
 
       // 3. Hide debug
       setTimeout(() => {
@@ -2617,10 +4178,9 @@
       }, 3000);
     }
 
-    // Multiple triggers to ensure start
-
     // Robust initialization: wait for pycmd bridge
     function waitForBridge() {
+      if (window.EDN_INIT_DONE) return;
       if (window.pycmd) {
         EDN_init();
       } else {
@@ -2628,11 +4188,59 @@
       }
     }
 
-    // Multiple triggers to ensure start, but mediated by waitForBridge
+    // Multiple triggers to ensure start, mediated by waitForBridge and EDN_INIT_DONE guard
     window.onload = waitForBridge;
     document.addEventListener('DOMContentLoaded', waitForBridge);
     // Fallback if events already fired
     setTimeout(waitForBridge, 500);
+
+    // ResizeObserver: force Chart.js to resize charts when window shrinks
+    // === Resize robuste pour Chart.js dans Qt WebEngine ===
+    let _resizeRaf = null;
+    function _forceResizeAllCharts() {
+      if (_resizeRaf) cancelAnimationFrame(_resizeRaf);
+      _resizeRaf = requestAnimationFrame(() => {
+        const isHistoryActive = document.getElementById('tabHistory')?.classList.contains('active');
+        if (isHistoryActive) {
+          const historyCharts = [
+            histStatesChart, histBacklogVolChart, histBacklogPerfChart,
+            histBacklogChart, forecastChartInstance
+          ].filter(c => c && c.canvas && c.canvas.offsetParent !== null);
+
+          if (historyCharts.length === 0) return;
+
+          // Étape 1 : Réduire temporairement la largeur de tous les canvas visibles à 0
+          // pour libérer la largeur minimale intrinsèque de la grille et des cartes CSS
+          historyCharts.forEach(c => {
+            try {
+              c.canvas.style.width = '0px';
+            } catch(e) {}
+          });
+
+          // Étape 2 : Recalculer la taille de chaque graphique à la taille exacte de son parent rétréci
+          requestAnimationFrame(() => {
+            historyCharts.forEach(c => {
+              try {
+                c.canvas.style.width = '';
+                c.resize();
+              } catch(e) {}
+            });
+          });
+        }
+      });
+    }
+
+    // window resize (fonctionne dans Qt WebEngine)
+    window.addEventListener('resize', _forceResizeAllCharts);
+
+    // ResizeObserver en complément (fonctionne dans les navigateurs modernes)
+    if (typeof ResizeObserver !== 'undefined') {
+      const _ro = new ResizeObserver(() => {
+        _forceResizeAllCharts();
+      });
+      const _mainEl = document.querySelector('main');
+      if (_mainEl) _ro.observe(_mainEl);
+    }
   </script>
 </body>
 

@@ -69,6 +69,8 @@ def collect_lite_data(*args, **kwargs):
             'median_difficulty': data['meta'].get('median_difficulty', 0),
             'total_units': data['meta'].get('total_units', 0),
             'available_subjects': data['meta'].get('available_subjects', []),  # CRITICAL: needed for dropdown
+            'available_decks': data['meta'].get('available_decks', []),
+            'selected_deck': data['meta'].get('selected_deck', '__AUTO__'),
             'num_critical_items': data['meta'].get('num_critical_items', 0)
         }
     }
@@ -123,6 +125,7 @@ def open_edn_progress() -> None:
                     rang = saved_settings.get("rang", "all")
                     include_children = saved_settings.get("includeChildren", False)
                     filter_by_subject = saved_settings.get("filterBySubject", False)
+                    selected_deck = saved_settings.get("selectedDeck", "__AUTO__")
                     if mode == 'subject':
                         subject_filter = saved_settings.get("enabledSubjects", None)
                     elif filter_by_subject:
@@ -136,6 +139,7 @@ def open_edn_progress() -> None:
                     overlap_threshold = float(saved_settings.get("subjectOverlapThreshold", 0.15))
                     crit_threshold = float(saved_settings.get("critThreshold", 0.8))
                     exclude_pediatric = saved_settings.get("excludePediatric", False)
+                    excluded_tags = saved_settings.get("excludedTags", "")
                     
                     # Masquer si Suspendu > N%
                     thresh_items = float(saved_settings.get("threshItems", 0.4))
@@ -161,7 +165,9 @@ def open_edn_progress() -> None:
                         subject_blacklist=set(),
                         overlap_threshold=overlap_threshold,
                         crit_threshold=crit_threshold,
-                        exclude_pediatric=exclude_pediatric
+                        exclude_pediatric=exclude_pediatric,
+                        selected_deck=selected_deck,
+                        excluded_tags=excluded_tags
                     )
                     web.eval(f"window.EDN_reload({json.dumps(data)});")
                 except Exception as e:
@@ -179,6 +185,14 @@ def open_edn_progress() -> None:
                             state = json.load(f)
                     else:
                         state = {"presets": {}, "settings": {}}
+                    
+                    if not isinstance(state, dict):
+                        state = {"presets": {}, "settings": {}}
+                    if "meta" not in state:
+                        state["meta"] = {}
+                    state["meta"]["available_subjects"] = stats_backend._all_subject_tags()
+                    state["meta"]["available_decks"] = stats_backend._get_all_available_decks()
+                    
                     web.eval(f"window.EDN_receiveState({json.dumps(state)});")
                 except Exception as e:
                     import traceback
@@ -232,7 +246,9 @@ def open_edn_progress() -> None:
                     subject_filter=payload.get("subject_filter", None),
                     overlap_threshold=payload.get("overlap_threshold", 0.15),
                     crit_threshold=payload.get("crit_threshold", 0.8),
-                    exclude_pediatric=payload.get("exclude_pediatric", False)
+                    exclude_pediatric=payload.get("exclude_pediatric", False),
+                    selected_deck=payload.get("selected_deck", "__AUTO__"),
+                    excluded_tags=payload.get("excluded_tags", "")
                 )
                 try:
                     web.eval(f"window.EDN_reload({json.dumps(data)});")
@@ -245,9 +261,11 @@ def open_edn_progress() -> None:
                     payload = json.loads(cmd[len("get_history_forecast "):])
                     window_days = payload.get("window_days", 90)
                     forecast_days = payload.get("forecast_days", 30)
+                    selected_deck = payload.get("selected_deck", "__AUTO__")
                     data = stats_backend.collect_history_and_forecast(
                         window_days=window_days,
-                        forecast_days=forecast_days
+                        forecast_days=forecast_days,
+                        selected_deck=selected_deck
                     )
                     web.eval(f"window.EDN_receiveHistoryForecast({json.dumps(data)});")
                 except Exception as e:
@@ -310,6 +328,41 @@ def open_edn_progress() -> None:
                     browser.search(query)
                 return
 
+            if cmd.startswith("create_filtered_deck "):
+                try:
+                    payload = json.loads(cmd[len("create_filtered_deck "):])
+                    name = payload.get("name", "EDN Révision")
+                    query = payload.get("query", "")
+                    limit = int(payload.get("limit", 100))
+                    
+                    did = mw.col.decks.id(name, create=False)
+                    if did:
+                        deck = mw.col.decks.get(did)
+                        if deck.get("dyn"):
+                            deck['terms'] = [[query, limit, 0]]
+                            mw.col.decks.save(deck)
+                            mw.col.sched.rebuild_dyn(did)
+                            mw.col.decks.select(did)
+                            mw.moveToState("overview")
+                            tooltip(f"Paquet filtré actualisé : {name}")
+                            return
+                        else:
+                            name = f"{name} (Filtré)"
+                    
+                    did = mw.col.decks.new_dyn(name)
+                    deck = mw.col.decks.get(did)
+                    deck['terms'] = [[query, limit, 0]]
+                    mw.col.decks.save(deck)
+                    mw.col.sched.rebuild_dyn(did)
+                    mw.col.decks.select(did)
+                    mw.moveToState("overview")
+                    tooltip(f"Paquet filtré créé : {name}")
+                except Exception as e:
+                    tooltip(f"Erreur création paquet filtré: {e}")
+                    import traceback
+                    traceback.print_exc()
+                return
+
             if cmd == "export_csv":
                 from aqt.utils import getSaveFile
                 
@@ -345,12 +398,26 @@ def open_edn_progress() -> None:
     with open(INDEX_HTML, "r", encoding="utf-8") as f:
         html = f.read()
 
+    # Determine user's language from Anki
+    user_lang = "fr"
+    try:
+        from anki.lang import current_lang
+        if current_lang:
+            user_lang = str(current_lang)
+        elif hasattr(mw, "pm") and getattr(mw.pm, "meta", None):
+            user_lang = mw.pm.meta.get("lang", "fr")
+    except Exception:
+        try:
+            if hasattr(mw, "pm") and getattr(mw.pm, "meta", None):
+                user_lang = mw.pm.meta.get("lang", "fr")
+        except Exception:
+            user_lang = "fr"
+
     # Pas de chargement initial - évite freeze
     initial = {"mode":"items","items":[], "meta": {}, "loading": True}
     
-    # CRITICAL FIX: Load saved state (presets + settings) BEFORE recompute_initial
-    # This ensures presets are available in JavaScript cache on startup
-    html = html.replace("/*__DATA_INJECTION__*/", f"window.EDN_DATA = {json.dumps(initial)}; setTimeout(function() {{ if(window.pycmd) {{ pycmd('load_state'); setTimeout(function() {{ pycmd('recompute_initial'); }}, 50); }} }}, 100);")
+    # Injection of user language and initial empty data structure
+    html = html.replace("/*__DATA_INJECTION__*/", f"window.EDN_USER_LANG = {json.dumps(user_lang)};\n    window.EDN_DATA = {json.dumps(initial)};")
 
     # Dynamically fix paths for CSS and JS to use Anki's local server (robust /_addons/ path)
     addon_package = mw.addonManager.addonFromModule(__name__)
@@ -358,6 +425,7 @@ def open_edn_progress() -> None:
     
     html = html.replace('href="style.css"', f'href="{web_prefix}/style.css"')
     html = html.replace('src="chart.umd.min.js"', f'src="{web_prefix}/chart.umd.min.js"')
+    html = html.replace('src="i18n.js"', f'src="{web_prefix}/i18n.js"')
     
     # Use standard stdHtml
     web.stdHtml(html)

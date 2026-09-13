@@ -61,7 +61,7 @@ def get_edn_menu():
         
         # Add settings action at bottom
         _edn_menu.addSeparator()
-        settings_action = QAction("⚙️ Paramètres EDN...", mw)
+        settings_action = QAction("Paramètres EDN...", mw)
         settings_action.triggered.connect(open_settings_dialog)
         _edn_menu.addAction(settings_action)
         
@@ -135,6 +135,28 @@ def register_action(module_id: str, label: str, callback: Callable,
         })
     
     return action
+
+def register_action_shortcut_only(module_id: str, label: str, callback: Optional[Callable] = None, 
+                                  shortcut: Optional[str] = None, shortcut_key: Optional[str] = None):
+    """
+    Register a shortcut for a module without adding an item to the EDN menu bar dropdown.
+    Allows the shortcut to appear and be configured in the EDN Shortcuts dialog.
+    """
+    registry = _get_registry()
+    if module_id in registry:
+        registry[module_id]["actions"].append({
+            "label": label,
+            "shortcut": shortcut,
+            "shortcut_key": shortcut_key or f"{module_id}_{label}",
+            "action": None,
+            "callback": callback
+        })
+
+def register_interface(module_id: str, widget_class):
+    """Register custom configuration widget for a module in settings dialog."""
+    registry = _get_registry()
+    if module_id in registry:
+        registry[module_id]["config_widget"] = widget_class
 
 def get_config() -> dict:
     """Load EDN configuration."""
@@ -211,6 +233,7 @@ def open_settings_dialog():
             title="Composants optionnels manquants"
         )
 
+
 def _initialize_card_styles_on_start():
     if not mw:
         return
@@ -229,7 +252,6 @@ def _initialize_card_styles_on_start():
             
             # Enregistrer la construction du menu après l'initialisation de la fenêtre principale
             from aqt import gui_hooks
-            gui_hooks.main_window_did_init.append(card_styles.setup_card_styles_menu)
         except ImportError:
             pass
         except Exception as e:
@@ -237,3 +259,4 @@ def _initialize_card_styles_on_start():
 
 from aqt import gui_hooks
 gui_hooks.profile_did_open.append(_initialize_card_styles_on_start)
+
