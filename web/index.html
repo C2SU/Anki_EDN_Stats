@@ -1056,8 +1056,16 @@
       <div class="history-grid">
         <!-- Chart 1: Evolution of Card States & Real Retention -->
         <div class="history-card">
-          <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-            <span>Évolution des États & Rétention</span>
+          <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <span id="statesChartTitle">Évolution des États & Rétention</span>
+              <div class="chart-toggle-group">
+                <button type="button" class="chart-toggle-btn active" id="btnStatesVolume" data-i18n="btn_states_volume" onclick="switchStatesChartView('volume')">Volume</button>
+                <button type="button" class="chart-toggle-btn" id="btnStatesPercent" data-i18n="btn_states_percent" onclick="switchStatesChartView('percent')">Verdissement (%)</button>
+                <button type="button" class="chart-toggle-btn" id="btnStatesFlux" data-i18n="btn_states_flux" onclick="switchStatesChartView('flux')">Flux & Vélocité</button>
+                <button type="button" class="chart-toggle-btn" id="btnStatesRCurve" data-i18n="btn_states_rcurve" onclick="switchStatesChartView('rcurve')">Courbe d'Oubli (R-Curve)</button>
+              </div>
+            </div>
             <small style="font-weight:normal; font-size:12px; color:#666;" id="retentionStatsLabel"></small>
           </h3>
           <div style="position:relative; height:350px; width:100%; min-width:0; overflow:hidden;">
@@ -2882,7 +2890,8 @@
           threshSubj: parseFloat(document.getElementById('threshSubjInput')?.value) || 0.4,
           histWindowDays: document.getElementById('histWindowSelect')?.value || "70",
           forecastWindowDays: document.getElementById('forecastWindowSelect')?.value || "30",
-          backlogViewMode: currentBacklogMode || "split"
+          backlogViewMode: currentBacklogMode || "split",
+          statesViewMode: currentStatesMode || "volume"
         },
         presets: presets
       };
@@ -3053,6 +3062,9 @@
         }
         if (s.backlogViewMode) {
           switchBacklogChartView(s.backlogViewMode, true);
+        }
+        if (s.statesViewMode) {
+          switchStatesChartView(s.statesViewMode, true);
         }
 
         // Restore last active tab
@@ -3534,6 +3546,39 @@
       }
     }
 
+    let currentStatesMode = (function() {
+      try {
+        return localStorage.getItem('edn_states_view_mode') || 'volume';
+      } catch(e) {
+        return 'volume';
+      }
+    })();
+
+    function switchStatesChartView(mode, skipSave = false) {
+      currentStatesMode = mode || 'volume';
+      try {
+        localStorage.setItem('edn_states_view_mode', currentStatesMode);
+      } catch(e) {}
+
+      const btns = {
+        'volume': document.getElementById('btnStatesVolume'),
+        'percent': document.getElementById('btnStatesPercent'),
+        'flux': document.getElementById('btnStatesFlux'),
+        'rcurve': document.getElementById('btnStatesRCurve')
+      };
+      for (const k in btns) {
+        if (btns[k]) btns[k].classList.toggle('active', currentStatesMode === k);
+      }
+
+      if (lastHistoryData) {
+        renderStatesChart(lastHistoryData);
+      }
+
+      if (!skipSave) {
+        saveState();
+      }
+    }
+
     function loadHistoryForecastData() {
       const windowDays = parseInt(document.getElementById('histWindowSelect')?.value) || 70;
       const forecastDays = parseInt(document.getElementById('forecastWindowSelect')?.value) || 30;
@@ -3587,85 +3632,8 @@
       const totalSimulated = Math.round(fore.simulated.reduce((acc, v) => acc + v, 0));
       document.getElementById('forecastStatsLabel').innerHTML = `Prévues : <b>${totalScheduled}</b> — FSRS Estimé : <b style="color:#2c7bb6;">${totalSimulated}</b>`;
 
-      // Chart 1: Évolution des États
-      if (histStatesChart) histStatesChart.destroy();
-      const ctx1 = document.getElementById('histStatesChart').getContext('2d');
-      
-      const retentionRates = hist.reviews_count.map((c, idx) => {
-        if (c === 0) return null;
-        return Math.round((hist.correct_count[idx] / c) * 100);
-      });
-      
-      histStatesChart = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-          labels: hist.dates,
-          datasets: [
-            {
-              label: 'Matures',
-              data: hist.mature,
-              backgroundColor: '#005500',
-              stack: 'states',
-              order: 1
-            },
-            {
-              label: 'Récentes',
-              data: hist.recent,
-              backgroundColor: '#5cb85c',
-              stack: 'states',
-              order: 1
-            },
-            {
-              label: 'En apprentissage',
-              data: hist.learning,
-              backgroundColor: '#f0ad4e',
-              stack: 'states',
-              order: 1
-            },
-            {
-              label: 'Inédites',
-              data: hist.new,
-              backgroundColor: '#00aaff',
-              stack: 'states',
-              order: 1
-            },
-            {
-              label: 'Suspendues',
-              data: hist.suspended,
-              backgroundColor: isNight ? '#555' : '#ccc',
-              stack: 'states',
-              order: 1
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              stacked: true,
-              beginAtZero: true,
-              grid: { color: gridColor },
-              ticks: { color: textColor },
-              title: { display: true, text: 'Nombre de cartes', color: textColor }
-            },
-            x: {
-              grid: { display: false },
-              ticks: { color: textColor, maxTicksLimit: 15 }
-            }
-          },
-          plugins: {
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            },
-            legend: {
-              position: 'bottom',
-              labels: { color: textColor, boxWidth: 12 }
-            }
-          }
-        }
-      });
+      // Chart 1: Évolution des États, Flux & Rétention
+      renderStatesChart(data);
 
       // Chart 2: Retard & Volume de Révisions
       renderBacklogCharts(data);
@@ -3724,6 +3692,499 @@
           }
         }
       });
+    }
+
+    function renderStatesChart(data) {
+      if (!data || !data.history) return;
+      const hist = data.history;
+      const isNight = document.body ? document.body.classList.contains('nightMode') : false;
+      const textColor = isNight ? '#e0e0e0' : '#333';
+      const gridColor = isNight ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)';
+
+      // Sync toggle buttons
+      const btns = {
+        'volume': document.getElementById('btnStatesVolume'),
+        'percent': document.getElementById('btnStatesPercent'),
+        'flux': document.getElementById('btnStatesFlux'),
+        'rcurve': document.getElementById('btnStatesRCurve')
+      };
+      for (const k in btns) {
+        if (btns[k]) btns[k].classList.toggle('active', currentStatesMode === k);
+      }
+
+      if (histStatesChart) {
+        histStatesChart.destroy();
+        histStatesChart = null;
+      }
+      const canvas = document.getElementById('histStatesChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      const titleEl = document.getElementById('statesChartTitle');
+      const statsLabelEl = document.getElementById('retentionStatsLabel');
+
+      if (currentStatesMode === 'volume') {
+        if (titleEl) titleEl.innerText = "Évolution des États & Rétention";
+
+        const retentionRates = (hist.reviews_count || []).map((c, idx) => {
+          if (!c) return null;
+          return Math.round(((hist.correct_count[idx] || 0) / c) * 100);
+        });
+
+        histStatesChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: hist.dates,
+            datasets: [
+              {
+                label: 'Matures',
+                data: hist.mature,
+                backgroundColor: '#005500',
+                stack: 'states',
+                yAxisID: 'y',
+                order: 2
+              },
+              {
+                label: 'Récentes',
+                data: hist.recent,
+                backgroundColor: '#5cb85c',
+                stack: 'states',
+                yAxisID: 'y',
+                order: 2
+              },
+              {
+                label: 'En apprentissage',
+                data: hist.learning,
+                backgroundColor: '#f0ad4e',
+                stack: 'states',
+                yAxisID: 'y',
+                order: 2
+              },
+              {
+                label: 'Inédites',
+                data: hist.new,
+                backgroundColor: '#00aaff',
+                stack: 'states',
+                yAxisID: 'y',
+                order: 2
+              },
+              {
+                label: 'Suspendues',
+                data: hist.suspended,
+                backgroundColor: isNight ? '#555' : '#ccc',
+                stack: 'states',
+                yAxisID: 'y',
+                order: 2
+              },
+              {
+                label: 'Rétention (%)',
+                data: retentionRates,
+                type: 'line',
+                borderColor: '#2c7bb6',
+                backgroundColor: '#2c7bb6',
+                borderWidth: 2,
+                pointRadius: 2,
+                tension: 0.2,
+                yAxisID: 'y1',
+                order: 1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                stacked: true,
+                beginAtZero: true,
+                grid: { color: gridColor },
+                ticks: { color: textColor },
+                title: { display: true, text: 'Nombre de cartes', color: textColor }
+              },
+              y1: {
+                type: 'linear',
+                position: 'right',
+                min: 0,
+                max: 100,
+                grid: { display: false },
+                ticks: {
+                  color: textColor,
+                  callback: v => v + '%'
+                },
+                title: { display: true, text: 'Rétention (%)', color: textColor }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: textColor, maxTicksLimit: 15 }
+              }
+            },
+            plugins: {
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: ctx => {
+                    if (ctx.dataset.yAxisID === 'y1') {
+                      return `${ctx.dataset.label} : ${ctx.raw !== null ? ctx.raw + '%' : 'N/A'}`;
+                    }
+                    return `${ctx.dataset.label} : ${ctx.raw} cartes`;
+                  }
+                }
+              },
+              legend: {
+                position: 'bottom',
+                labels: { color: textColor, boxWidth: 12 }
+              }
+            }
+          }
+        });
+
+        let totalRevs = 0, totalCorrect = 0;
+        (hist.reviews_count || []).forEach((c, idx) => {
+          totalRevs += c;
+          totalCorrect += (hist.correct_count[idx] || 0);
+        });
+        const avgRet = totalRevs > 0 ? Math.round((totalCorrect / totalRevs) * 100) : 0;
+        const retCol = avgRet >= 80 ? '#388e3c' : avgRet >= 70 ? '#f57c00' : '#d32f2f';
+        const lastMat = (hist.mature && hist.mature.length > 0) ? hist.mature[hist.mature.length - 1] : 0;
+        const totCards = lastMat + ((hist.recent && hist.recent.length > 0) ? hist.recent[hist.recent.length - 1] : 0) +
+          ((hist.learning && hist.learning.length > 0) ? hist.learning[hist.learning.length - 1] : 0) +
+          ((hist.new && hist.new.length > 0) ? hist.new[hist.new.length - 1] : 0) +
+          ((hist.suspended && hist.suspended.length > 0) ? hist.suspended[hist.suspended.length - 1] : 0);
+        const matPct = totCards > 0 ? Math.round((lastMat / totCards) * 100) : 0;
+        if (statsLabelEl) {
+          statsLabelEl.innerHTML = `Révisions : <b>${totalRevs}</b> — Rétention : <span style="color:${retCol}; font-weight:bold;">${avgRet}%</span> — Matures : <b>${lastMat}</b> (${matPct}%)`;
+        }
+
+      } else if (currentStatesMode === 'percent') {
+        if (titleEl) titleEl.innerText = "Cinétique de Conversion & Verdissement (%)";
+
+        const pctMature = [];
+        const pctRecent = [];
+        const pctLearning = [];
+        const pctNew = [];
+        const pctSuspended = [];
+        const pctGreen = [];
+
+        const len = (hist.dates || []).length;
+        for (let i = 0; i < len; i++) {
+          const m = (hist.mature && hist.mature[i]) || 0;
+          const r = (hist.recent && hist.recent[i]) || 0;
+          const l = (hist.learning && hist.learning[i]) || 0;
+          const n = (hist.new && hist.new[i]) || 0;
+          const s = (hist.suspended && hist.suspended[i]) || 0;
+          const tot = m + r + l + n + s;
+
+          if (tot > 0) {
+            const pm = Math.round((m / tot) * 1000) / 10;
+            const pr = Math.round((r / tot) * 1000) / 10;
+            const pl = Math.round((l / tot) * 1000) / 10;
+            const pn = Math.round((n / tot) * 1000) / 10;
+            const ps = Math.max(0, Math.round((100 - (pm + pr + pl + pn)) * 10) / 10);
+            pctMature.push(pm);
+            pctRecent.push(pr);
+            pctLearning.push(pl);
+            pctNew.push(pn);
+            pctSuspended.push(ps);
+            pctGreen.push(Math.round((pm + pr) * 10) / 10);
+          } else {
+            pctMature.push(0);
+            pctRecent.push(0);
+            pctLearning.push(0);
+            pctNew.push(0);
+            pctSuspended.push(0);
+            pctGreen.push(0);
+          }
+        }
+
+        histStatesChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: hist.dates,
+            datasets: [
+              {
+                label: 'Matures (%)',
+                data: pctMature,
+                backgroundColor: '#005500',
+                stack: 'pct',
+                order: 2
+              },
+              {
+                label: 'Récentes (%)',
+                data: pctRecent,
+                backgroundColor: '#5cb85c',
+                stack: 'pct',
+                order: 2
+              },
+              {
+                label: 'En apprentissage (%)',
+                data: pctLearning,
+                backgroundColor: '#f0ad4e',
+                stack: 'pct',
+                order: 2
+              },
+              {
+                label: 'Inédites (%)',
+                data: pctNew,
+                backgroundColor: '#00aaff',
+                stack: 'pct',
+                order: 2
+              },
+              {
+                label: 'Suspendues (%)',
+                data: pctSuspended,
+                backgroundColor: isNight ? '#555' : '#ccc',
+                stack: 'pct',
+                order: 2
+              },
+              {
+                label: 'Total Vertes (%)',
+                data: pctGreen,
+                type: 'line',
+                borderColor: isNight ? '#81c784' : '#1b5e20',
+                backgroundColor: isNight ? '#81c784' : '#1b5e20',
+                borderWidth: 2.5,
+                tension: 0.2,
+                pointRadius: 2,
+                order: 1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                stacked: true,
+                beginAtZero: true,
+                min: 0,
+                max: 100,
+                grid: { color: gridColor },
+                ticks: {
+                  color: textColor,
+                  callback: v => v + '%'
+                },
+                title: { display: true, text: 'Part du deck (%)', color: textColor }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: textColor, maxTicksLimit: 15 }
+              }
+            },
+            plugins: {
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: ctx => `${ctx.dataset.label} : ${ctx.raw}%`
+                }
+              },
+              legend: {
+                position: 'bottom',
+                labels: { color: textColor, boxWidth: 12 }
+              }
+            }
+          }
+        });
+
+        const curGreen = pctGreen.length > 0 ? pctGreen[pctGreen.length - 1] : 0;
+        const curMat = pctMature.length > 0 ? pctMature[pctMature.length - 1] : 0;
+        const curRec = pctRecent.length > 0 ? pctRecent[pctRecent.length - 1] : 0;
+        if (statsLabelEl) {
+          statsLabelEl.innerHTML = `Verdissement actuel : <b style="color:#2e7d32;">${curGreen}%</b> (Matures : <b>${curMat}%</b> — Récentes : <b>${curRec}%</b>)`;
+        }
+
+      } else if (currentStatesMode === 'flux') {
+        if (titleEl) titleEl.innerText = "Flux Net de Maturation & Vélocité d'Ancrage";
+
+        const newMat = hist.new_mature || [];
+        const actCards = hist.activated || [];
+        const lapMatNeg = (hist.lapsed_mature || []).map(v => -v);
+        const vel7d = hist.velocity_7d || [];
+
+        histStatesChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: hist.dates,
+            datasets: [
+              {
+                label: 'Nouvelles Matures (+)',
+                data: newMat,
+                backgroundColor: '#2e7d32',
+                stack: 'pos',
+                order: 2
+              },
+              {
+                label: 'Activations Gris/Bleu (+)',
+                data: actCards,
+                backgroundColor: isNight ? 'rgba(66, 165, 245, 0.65)' : 'rgba(33, 150, 243, 0.6)',
+                stack: 'pos',
+                order: 2
+              },
+              {
+                label: 'Rechutes Matures (- Lapses)',
+                data: lapMatNeg,
+                backgroundColor: '#c62828',
+                stack: 'neg',
+                order: 2
+              },
+              {
+                label: 'Vélocité Nette 7j (Moyenne)',
+                data: vel7d,
+                type: 'line',
+                borderColor: '#e65100',
+                backgroundColor: '#e65100',
+                borderWidth: 2.5,
+                tension: 0.25,
+                pointRadius: 2,
+                order: 1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                grid: { color: gridColor },
+                ticks: { color: textColor },
+                title: { display: true, text: 'Cartes / jour', color: textColor }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: textColor, maxTicksLimit: 15 }
+              }
+            },
+            plugins: {
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: ctx => {
+                    const sign = ctx.raw > 0 ? '+' : '';
+                    return `${ctx.dataset.label} : ${sign}${ctx.raw} cartes`;
+                  }
+                }
+              },
+              legend: {
+                position: 'bottom',
+                labels: { color: textColor, boxWidth: 12 }
+              }
+            }
+          }
+        });
+
+        const totalNew = newMat.reduce((a, b) => a + b, 0);
+        const totalLap = (hist.lapsed_mature || []).reduce((a, b) => a + b, 0);
+        const totalNet = totalNew - totalLap;
+        const totalAct = actCards.reduce((a, b) => a + b, 0);
+        const curVel = vel7d.length > 0 ? vel7d[vel7d.length - 1] : 0;
+        const netSign = totalNet >= 0 ? '+' : '';
+        const netCol = totalNet >= 0 ? '#2e7d32' : '#c62828';
+        if (statsLabelEl) {
+          statsLabelEl.innerHTML = `Matures nettes : <span style="color:${netCol}; font-weight:bold;">${netSign}${totalNet}</span> (+${totalNew} / -${totalLap}) — Vélocité 7j : <b>${curVel}/j</b> — Activées : <b>${totalAct}</b>`;
+        }
+
+      } else if (currentStatesMode === 'rcurve') {
+        if (titleEl) titleEl.innerText = "Courbe d'Oubli Réelle par Intervalle (R-Curve)";
+
+        const rCurve = data.r_curve || { labels: [], totals: [], successes: [], retention: [] };
+        const targetLine = (rCurve.labels || []).map(() => 85);
+
+        histStatesChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: rCurve.labels,
+            datasets: [
+              {
+                label: 'Rétention réelle (%)',
+                data: rCurve.retention,
+                borderColor: '#1976d2',
+                backgroundColor: '#1976d2',
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                tension: 0.15,
+                yAxisID: 'y',
+                order: 1
+              },
+              {
+                label: 'Seuil cible (85%)',
+                data: targetLine,
+                borderColor: isNight ? '#888' : '#757575',
+                borderDash: [5, 4],
+                borderWidth: 1.5,
+                pointRadius: 0,
+                yAxisID: 'y',
+                order: 2
+              },
+              {
+                label: 'Volume de tests',
+                data: rCurve.totals,
+                type: 'bar',
+                backgroundColor: isNight ? 'rgba(100, 116, 139, 0.45)' : 'rgba(148, 163, 184, 0.35)',
+                borderWidth: 0,
+                yAxisID: 'y1',
+                order: 3
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                min: 50,
+                max: 100,
+                grid: { color: gridColor },
+                ticks: {
+                  color: textColor,
+                  callback: v => v + '%'
+                },
+                title: { display: true, text: 'Rétention réelle (%)', color: textColor }
+              },
+              y1: {
+                type: 'linear',
+                position: 'right',
+                beginAtZero: true,
+                grid: { display: false },
+                ticks: { color: textColor },
+                title: { display: true, text: 'Nombre de révisions testées', color: textColor }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: textColor },
+                title: { display: true, text: 'Intervalle testé', color: textColor }
+              }
+            },
+            plugins: {
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: ctx => {
+                    if (ctx.dataset.yAxisID === 'y') {
+                      return `${ctx.dataset.label} : ${ctx.raw !== null ? ctx.raw + '%' : 'N/A'}`;
+                    }
+                    return `${ctx.dataset.label} : ${ctx.raw} révisions`;
+                  }
+                }
+              },
+              legend: {
+                position: 'bottom',
+                labels: { color: textColor, boxWidth: 12 }
+              }
+            }
+          }
+        });
+
+        const totalTested = (rCurve.totals || []).reduce((a, b) => a + b, 0);
+        const totalPassed = (rCurve.successes || []).reduce((a, b) => a + b, 0);
+        const overallRet = totalTested > 0 ? Math.round((totalPassed / totalTested) * 1000) / 10 : 0;
+        if (statsLabelEl) {
+          statsLabelEl.innerHTML = `Tests analysés : <b>${totalTested}</b> — Rétention moyenne : <b style="color:#2c7bb6;">${overallRet}%</b> — Seuil cible : <b>85%</b>`;
+        }
+      }
     }
 
     function renderBacklogCharts(data) {

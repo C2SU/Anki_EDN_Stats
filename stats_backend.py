@@ -1175,12 +1175,12 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
         dids_str = ",".join(str(int(did)) for did in target_deck_ids)
         cards_rows = mw.col.db.all(f"SELECT id, queue, type, ivl, due FROM cards WHERE did IN ({dids_str})")
         rev_rows = mw.col.db.all(f"""
-            SELECT revlog.cid as cid, revlog.id as id, revlog.ivl as ivl, revlog.ease as ease, revlog.type as type, revlog.time as time
+            SELECT revlog.cid as cid, revlog.id as id, revlog.ivl as ivl, revlog.ease as ease, revlog.type as type, revlog.time as time, revlog.lastIvl as lastIvl
             FROM revlog
             JOIN cards ON revlog.cid = cards.id
             WHERE cards.did IN ({dids_str}) AND revlog.id >= ?
             UNION ALL
-            SELECT revlog.cid as cid, revlog.id as id, revlog.ivl as ivl, revlog.ease as ease, revlog.type as type, revlog.time as time
+            SELECT revlog.cid as cid, revlog.id as id, revlog.ivl as ivl, revlog.ease as ease, revlog.type as type, revlog.time as time, revlog.lastIvl as lastIvl
             FROM revlog
             JOIN cards ON revlog.cid = cards.id
             WHERE cards.did IN ({dids_str}) AND revlog.id IN (
@@ -1195,11 +1195,11 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
     else:
         cards_rows = mw.col.db.all("SELECT id, queue, type, ivl, due FROM cards")
         rev_rows = mw.col.db.all("""
-            SELECT cid as cid, id as id, ivl as ivl, ease as ease, type as type, time as time
+            SELECT cid as cid, id as id, ivl as ivl, ease as ease, type as type, time as time, lastIvl as lastIvl
             FROM revlog
             WHERE id >= ?
             UNION ALL
-            SELECT cid as cid, id as id, ivl as ivl, ease as ease, type as type, time as time
+            SELECT cid as cid, id as id, ivl as ivl, ease as ease, type as type, time as time, lastIvl as lastIvl
             FROM revlog
             WHERE id IN (
                 SELECT MAX(id)
@@ -1220,10 +1220,10 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
         }
         
     reviews_by_card = {}
-    for cid, r_id, ivl, ease, typ, study_time in rev_rows:
+    for cid, r_id, ivl, ease, typ, study_time, lastIvl in rev_rows:
         if cid not in reviews_by_card:
             reviews_by_card[cid] = []
-        reviews_by_card[cid].append((r_id, ivl, ease, typ, study_time))
+        reviews_by_card[cid].append((r_id, ivl, ease, typ, study_time, lastIvl))
         
     # Initialize daily stats arrays
     W = window_days
@@ -1233,6 +1233,11 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
     history_new = [0] * W
     history_suspended = [0] * W
     history_overdue = [0] * W
+    
+    # Kinetics tracking
+    history_new_mature = [0] * W
+    history_lapsed_mature = [0] * W
+    history_activated = [0] * W
     
     # Daily review counts & time
     history_reviews_count = [0] * W
@@ -1245,7 +1250,7 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
         
     # Track historical reviews from rev_rows
     new_reviews_count = 0
-    for cid, r_id, ivl, ease, typ, study_time in rev_rows:
+    for cid, r_id, ivl, ease, typ, study_time, lastIvl in rev_rows:
         if r_id >= cutoff_ts_ms:
             idx = ts_to_idx(r_id)
             if 0 <= idx < W:
@@ -1255,6 +1260,65 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
                 history_study_time_ms[idx] += study_time
             if ease == 1 or typ == 0:
                 new_reviews_count += 1
+                
+    # Track daily card activation & maturation fluxes from reviews_by_card
+    for cid, revs in reviews_by_card.items():
+        if not revs:
+            continue
+        first_r_ts = revs[0][0]
+        first_idx = ts_to_idx(first_r_ts)
+        if 0 <= first_idx < W:
+            history_activated[first_idx] += 1
+            
+        for k in range(len(revs)):
+            r_ts, r_ivl, ease, typ, study_time, lastIvl = revs[k]
+            if r_ts >= cutoff_ts_ms:
+                idx = ts_to_idx(r_ts)
+                if 0 <= idx < W:
+                    prev_ivl = revs[k - 1][1] if k > 0 else lastIvl
+                    # Card reached mature (>=21d) from non-mature (<21d)
+                    if prev_ivl < 21 and r_ivl >= 21:
+                        history_new_mature[idx] += 1
+                    # Mature card lapsed (failed review on mature card)
+                    if prev_ivl >= 21 and ease == 1:
+                        history_lapsed_mature[idx] += 1
+                        
+    # Net mature flux & 7-day rolling velocity
+    history_net_mature = [nm - lm for nm, lm in zip(history_new_mature, history_lapsed_mature)]
+    history_velocity_7d = [0.0] * W
+    for i in range(W):
+        s_win = max(0, i - 6)
+        c_win = i - s_win + 1
+        history_velocity_7d[i] = round(sum(history_net_mature[s_win:i+1]) / float(c_win), 1)
+        
+    # Empirical R-curve (forgetting curve by interval bins)
+    r_bins_data = [
+        {"label": "1-2 j", "low": 1, "high": 2, "total": 0, "success": 0},
+        {"label": "3-6 j", "low": 3, "high": 6, "total": 0, "success": 0},
+        {"label": "7-14 j", "low": 7, "high": 14, "total": 0, "success": 0},
+        {"label": "15-21 j", "low": 15, "high": 21, "total": 0, "success": 0},
+        {"label": "22-45 j", "low": 22, "high": 45, "total": 0, "success": 0},
+        {"label": "46-90 j", "low": 46, "high": 90, "total": 0, "success": 0},
+        {"label": "91-180 j", "low": 91, "high": 180, "total": 0, "success": 0},
+        {"label": "> 180 j", "low": 181, "high": 9999999, "total": 0, "success": 0}
+    ]
+    for cid, r_id, ivl, ease, typ, study_time, lastIvl in rev_rows:
+        if r_id >= cutoff_ts_ms and lastIvl > 0:
+            for b in r_bins_data:
+                if b["low"] <= lastIvl <= b["high"]:
+                    b["total"] += 1
+                    if ease > 1:
+                        b["success"] += 1
+                    break
+    r_curve = {
+        "labels": [b["label"] for b in r_bins_data],
+        "totals": [b["total"] for b in r_bins_data],
+        "successes": [b["success"] for b in r_bins_data],
+        "retention": [
+            round((b["success"] / b["total"]) * 100, 1) if b["total"] > 0 else None
+            for b in r_bins_data
+        ]
+    }
                 
     # Average new cards per day
     first_reviews_last_30_days = 0
@@ -1468,8 +1532,14 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
             'overdue': history_overdue,
             'reviews_count': history_reviews_count,
             'correct_count': history_correct_count,
-            'study_time_min': [round(x / 60000.0, 1) for x in history_study_time_ms]
+            'study_time_min': [round(x / 60000.0, 1) for x in history_study_time_ms],
+            'new_mature': history_new_mature,
+            'lapsed_mature': history_lapsed_mature,
+            'net_mature': history_net_mature,
+            'velocity_7d': history_velocity_7d,
+            'activated': history_activated
         },
+        'r_curve': r_curve,
         'forecast': {
             'dates': forecast_dates,
             'scheduled': scheduled_due,

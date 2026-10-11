@@ -2,7 +2,7 @@
 from __future__ import annotations
 import os, json
 from aqt import mw, gui_hooks
-from aqt.qt import QDockWidget, QAction, Qt
+from aqt.qt import QDockWidget, QAction, Qt, QTimer
 from aqt.webview import AnkiWebView
 from aqt.utils import showInfo, tooltip
 
@@ -76,33 +76,99 @@ def collect_lite_data(*args, **kwargs):
     }
 
 
+def _refresh_mw_active_view() -> None:
+    """Force le rafraichissement propre et la reinvalidation graphique de la vue principale d'Anki."""
+    if not mw:
+        return
+    try:
+        # 1. Notifier le moteur Spotlight Background si installe
+        try:
+            import Anki_EDN_Spotlight_Background as bg_mod
+            if hasattr(bg_mod, "css_engine"):
+                bg_mod.css_engine.update_all_views()
+            if hasattr(bg_mod, "_force_active_view_update"):
+                bg_mod._force_active_view_update()
+        except Exception:
+            pass
+
+        # 2. Identifier la vue active
+        active_web = None
+        state = getattr(mw, "state", None)
+        if state == "deckBrowser" and hasattr(mw, "deckBrowser"):
+            active_web = getattr(mw.deckBrowser, "web", None)
+        elif state == "overview" and hasattr(mw, "overview"):
+            active_web = getattr(mw.overview, "web", None)
+        elif state == "review" and hasattr(mw, "reviewer"):
+            active_web = getattr(mw.reviewer, "web", None)
+
+        def _do_update():
+            if not mw:
+                return
+            try:
+                if active_web:
+                    active_web.update()
+                central = mw.centralWidget()
+                if central:
+                    central.update()
+            except Exception:
+                pass
+
+        for delay in (0, 50, 150, 300):
+            QTimer.singleShot(delay, _do_update)
+    except Exception:
+        pass
+
+
+class EDNDockWidget(QDockWidget):
+    """QDockWidget specialise pour EDN Stat assurant un rafraichissement net du canvas central."""
+
+    def closeEvent(self, event):
+        super().closeEvent(event)
+        _refresh_mw_active_view()
+
+
 def open_edn_progress() -> None:
     if not os.path.exists(INDEX_HTML):
         showInfo("EDN Stat: web/index.html introuvable dans l'addon.")
         return
 
-    dock = QDockWidget("EDN Stat", mw)
+    # Si le dock existe deja, l'afficher et le rehausser sans recreer de ressources
+    existing_dock = mw.findChild(QDockWidget, "EDN_PROGRESS_DOCK")
+    if existing_dock:
+        existing_dock.show()
+        existing_dock.raise_()
+        existing_dock.activateWindow()
+        _refresh_mw_active_view()
+        return
+
+    dock = EDNDockWidget("EDN Stat", mw)
     dock.setObjectName("EDN_PROGRESS_DOCK")
     dock.setAllowedAreas(Qt.DockWidgetArea.AllDockWidgetAreas)
 
-    web = AnkiWebView(parent=mw)
-    dock.setMinimumWidth(500) # User request: open with more space
+    web = AnkiWebView(parent=dock)
+    dock.setMinimumWidth(500)  # User request: open with more space
     dock.setWidget(web)
 
-    # User Request: Standard window controls (Min/Max/Close) when floating
-    def on_top_level_changed(floating):
-        if floating:
-            # Qt6 compatibility: Use WindowType enum
-            try:
-                from aqt.qt import Qt
-                flags = Qt.WindowType.Window
+    # Standard window controls (Min/Max/Close) when floating et restauration propre lors du redocking
+    def on_top_level_changed(floating: bool) -> None:
+        try:
+            if floating:
+                flags = (
+                    Qt.WindowType.Window
+                    | Qt.WindowType.CustomizeWindowHint
+                    | Qt.WindowType.WindowMinMaxButtonsHint
+                    | Qt.WindowType.WindowCloseButtonHint
+                )
                 dock.setWindowFlags(flags)
-                dock.show()
-            except (AttributeError, ImportError):
-                # Fallback - dock already has default controls
-                pass
-    
+            else:
+                dock.setWindowFlags(Qt.WindowType.Widget)
+            dock.show()
+        except Exception:
+            pass
+        _refresh_mw_active_view()
+
     dock.topLevelChanged.connect(on_top_level_changed)
+    dock.visibilityChanged.connect(lambda visible: not visible and _refresh_mw_active_view())
 
     def _on_bridge(cmd: str) -> None:
         """Bridge handler"""
@@ -446,6 +512,7 @@ def open_edn_progress() -> None:
         mw.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
 
     dock.show()
+    _refresh_mw_active_view()
 
 
 def init_edn_progress():
@@ -490,4 +557,15 @@ def init_edn_progress():
         import traceback
         traceback.print_exc()
 
+def on_profile_will_close() -> None:
+    dock = mw.findChild(QDockWidget, "EDN_PROGRESS_DOCK")
+    if dock:
+        try:
+            dock.close()
+            dock.deleteLater()
+        except Exception:
+            pass
+
+
 gui_hooks.main_window_did_init.append(init_edn_progress)
+gui_hooks.profile_will_close.append(on_profile_will_close)
