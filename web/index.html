@@ -1058,12 +1058,10 @@
         <div class="history-card">
           <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-              <span id="statesChartTitle">Évolution des États & Rétention</span>
+              <span id="statesChartTitle">Cinétique de Conversion & Verdissement</span>
               <div class="chart-toggle-group">
-                <button type="button" class="chart-toggle-btn active" id="btnStatesVolume" data-i18n="btn_states_volume" onclick="switchStatesChartView('volume')">Volume</button>
-                <button type="button" class="chart-toggle-btn" id="btnStatesPercent" data-i18n="btn_states_percent" onclick="switchStatesChartView('percent')">Verdissement (%)</button>
+                <button type="button" class="chart-toggle-btn active" id="btnStatesGreen" data-i18n="btn_states_percent" onclick="toggleGreenUnit()">Verdissement (%)</button>
                 <button type="button" class="chart-toggle-btn" id="btnStatesFlux" data-i18n="btn_states_flux" onclick="switchStatesChartView('flux')">Flux & Vélocité</button>
-                <button type="button" class="chart-toggle-btn" id="btnStatesRCurve" data-i18n="btn_states_rcurve" onclick="switchStatesChartView('rcurve')">Courbe d'Oubli (R-Curve)</button>
               </div>
             </div>
             <small style="font-weight:normal; font-size:12px; color:#666;" id="retentionStatsLabel"></small>
@@ -1078,15 +1076,11 @@
           <h3 style="margin-top:0; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
               <span>Retard (Backlog) & Volume de Révisions</span>
-              <div class="chart-toggle-group">
-                <button type="button" class="chart-toggle-btn active" id="btnBacklogSplit" onclick="switchBacklogChartView('split')">Vue Découpée</button>
-                <button type="button" class="chart-toggle-btn" id="btnBacklogCombined" onclick="switchBacklogChartView('combined')">Vue Superposée</button>
-              </div>
             </div>
             <small style="font-weight:normal; font-size:12px; color:#666;" id="backlogStatsLabel"></small>
           </h3>
 
-          <!-- Split View (Default): 2 Stacked Subcharts -->
+          <!-- Split View: 2 Stacked Subcharts -->
           <div id="backlogSplitView" class="subchart-container">
             <div class="subchart-box">
               <div class="subchart-header">
@@ -1105,11 +1099,6 @@
                 <canvas id="histBacklogPerfChart" class="chart-canvas"></canvas>
               </div>
             </div>
-          </div>
-
-          <!-- Combined View (Single canvas alternative) -->
-          <div id="backlogCombinedView" style="position:relative; height:380px; width:100%; min-width:0; overflow:hidden; display:none;">
-            <canvas id="histBacklogChart" class="chart-canvas"></canvas>
           </div>
         </div>
         
@@ -2891,7 +2880,7 @@
           histWindowDays: document.getElementById('histWindowSelect')?.value || "70",
           forecastWindowDays: document.getElementById('forecastWindowSelect')?.value || "30",
           backlogViewMode: currentBacklogMode || "split",
-          statesViewMode: currentStatesMode || "volume"
+          statesViewMode: currentStatesMode || "percent"
         },
         presets: presets
       };
@@ -3507,7 +3496,6 @@
       }
     })();
     let histStatesChart = null;
-    let histBacklogChart = null;
     let histBacklogVolChart = null;
     let histBacklogPerfChart = null;
     let forecastChartInstance = null;
@@ -3515,26 +3503,14 @@
     let lastHistoryData = null;
 
     function switchBacklogChartView(mode, skipSave = false) {
-      currentBacklogMode = mode || 'split';
+      currentBacklogMode = 'split';
       try {
-        localStorage.setItem('edn_backlog_view_mode', currentBacklogMode);
+        localStorage.setItem('edn_backlog_view_mode', 'split');
       } catch(e) {}
-
-      const btnSplit = document.getElementById('btnBacklogSplit');
-      const btnComb = document.getElementById('btnBacklogCombined');
-      if (btnSplit) btnSplit.classList.toggle('active', currentBacklogMode === 'split');
-      if (btnComb) btnComb.classList.toggle('active', currentBacklogMode === 'combined');
       
       const splitView = document.getElementById('backlogSplitView');
-      const combView = document.getElementById('backlogCombinedView');
-      if (splitView && combView) {
-        if (currentBacklogMode === 'split') {
-          splitView.style.display = 'flex';
-          combView.style.display = 'none';
-        } else {
-          splitView.style.display = 'none';
-          combView.style.display = 'block';
-        }
+      if (splitView) {
+        splitView.style.display = 'flex';
       }
       
       if (lastHistoryData) {
@@ -3548,26 +3524,41 @@
 
     let currentStatesMode = (function() {
       try {
-        return localStorage.getItem('edn_states_view_mode') || 'volume';
+        const saved = localStorage.getItem('edn_states_view_mode');
+        if (saved === 'flux') return 'flux';
+        if (saved === 'volume' || saved === 'count') return 'count';
+        return 'percent';
       } catch(e) {
-        return 'volume';
+        return 'percent';
       }
     })();
 
+    function toggleGreenUnit() {
+      if (currentStatesMode === 'flux') {
+        switchStatesChartView('percent');
+      } else if (currentStatesMode === 'percent') {
+        switchStatesChartView('count');
+      } else {
+        switchStatesChartView('percent');
+      }
+    }
+
     function switchStatesChartView(mode, skipSave = false) {
-      currentStatesMode = mode || 'volume';
+      if (mode === 'volume') mode = 'count';
+      if (mode === 'rcurve') mode = 'percent';
+      currentStatesMode = mode || 'percent';
       try {
         localStorage.setItem('edn_states_view_mode', currentStatesMode);
       } catch(e) {}
 
-      const btns = {
-        'volume': document.getElementById('btnStatesVolume'),
-        'percent': document.getElementById('btnStatesPercent'),
-        'flux': document.getElementById('btnStatesFlux'),
-        'rcurve': document.getElementById('btnStatesRCurve')
-      };
-      for (const k in btns) {
-        if (btns[k]) btns[k].classList.toggle('active', currentStatesMode === k);
+      const btnGreen = document.getElementById('btnStatesGreen');
+      const btnFlux = document.getElementById('btnStatesFlux');
+      if (btnGreen) {
+        btnGreen.classList.toggle('active', currentStatesMode === 'percent' || currentStatesMode === 'count');
+        btnGreen.innerText = currentStatesMode === 'count' ? 'Verdissement (Quantitatif)' : 'Verdissement (%)';
+      }
+      if (btnFlux) {
+        btnFlux.classList.toggle('active', currentStatesMode === 'flux');
       }
 
       if (lastHistoryData) {
@@ -3702,14 +3693,14 @@
       const gridColor = isNight ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)';
 
       // Sync toggle buttons
-      const btns = {
-        'volume': document.getElementById('btnStatesVolume'),
-        'percent': document.getElementById('btnStatesPercent'),
-        'flux': document.getElementById('btnStatesFlux'),
-        'rcurve': document.getElementById('btnStatesRCurve')
-      };
-      for (const k in btns) {
-        if (btns[k]) btns[k].classList.toggle('active', currentStatesMode === k);
+      const btnGreen = document.getElementById('btnStatesGreen');
+      const btnFlux = document.getElementById('btnStatesFlux');
+      if (btnGreen) {
+        btnGreen.classList.toggle('active', currentStatesMode === 'percent' || currentStatesMode === 'count');
+        btnGreen.innerText = currentStatesMode === 'count' ? 'Verdissement (Quantitatif)' : 'Verdissement (%)';
+      }
+      if (btnFlux) {
+        btnFlux.classList.toggle('active', currentStatesMode === 'flux');
       }
 
       if (histStatesChart) {
@@ -3723,12 +3714,13 @@
       const titleEl = document.getElementById('statesChartTitle');
       const statsLabelEl = document.getElementById('retentionStatsLabel');
 
-      if (currentStatesMode === 'volume') {
-        if (titleEl) titleEl.innerText = "Évolution des États & Rétention";
+      if (currentStatesMode === 'count') {
+        if (titleEl) titleEl.innerText = "Cinétique de Conversion & Verdissement (Cartes)";
 
-        const retentionRates = (hist.reviews_count || []).map((c, idx) => {
-          if (!c) return null;
-          return Math.round(((hist.correct_count[idx] || 0) / c) * 100);
+        const totalGreenCount = (hist.dates || []).map((_, i) => {
+          const m = (hist.mature && hist.mature[i]) || 0;
+          const r = (hist.recent && hist.recent[i]) || 0;
+          return m + r;
         });
 
         histStatesChart = new Chart(ctx, {
@@ -3741,7 +3733,6 @@
                 data: hist.mature,
                 backgroundColor: '#005500',
                 stack: 'states',
-                yAxisID: 'y',
                 order: 2
               },
               {
@@ -3749,7 +3740,6 @@
                 data: hist.recent,
                 backgroundColor: '#5cb85c',
                 stack: 'states',
-                yAxisID: 'y',
                 order: 2
               },
               {
@@ -3757,7 +3747,6 @@
                 data: hist.learning,
                 backgroundColor: '#f0ad4e',
                 stack: 'states',
-                yAxisID: 'y',
                 order: 2
               },
               {
@@ -3765,7 +3754,6 @@
                 data: hist.new,
                 backgroundColor: '#00aaff',
                 stack: 'states',
-                yAxisID: 'y',
                 order: 2
               },
               {
@@ -3773,19 +3761,17 @@
                 data: hist.suspended,
                 backgroundColor: isNight ? '#555' : '#ccc',
                 stack: 'states',
-                yAxisID: 'y',
                 order: 2
               },
               {
-                label: 'Rétention (%)',
-                data: retentionRates,
+                label: 'Total Vertes',
+                data: totalGreenCount,
                 type: 'line',
-                borderColor: '#2c7bb6',
-                backgroundColor: '#2c7bb6',
-                borderWidth: 2,
-                pointRadius: 2,
+                borderColor: isNight ? '#81c784' : '#1b5e20',
+                backgroundColor: isNight ? '#81c784' : '#1b5e20',
+                borderWidth: 2.5,
                 tension: 0.2,
-                yAxisID: 'y1',
+                pointRadius: 2,
                 order: 1
               }
             ]
@@ -3801,18 +3787,6 @@
                 ticks: { color: textColor },
                 title: { display: true, text: 'Nombre de cartes', color: textColor }
               },
-              y1: {
-                type: 'linear',
-                position: 'right',
-                min: 0,
-                max: 100,
-                grid: { display: false },
-                ticks: {
-                  color: textColor,
-                  callback: v => v + '%'
-                },
-                title: { display: true, text: 'Rétention (%)', color: textColor }
-              },
               x: {
                 grid: { display: false },
                 ticks: { color: textColor, maxTicksLimit: 15 }
@@ -3823,12 +3797,7 @@
                 mode: 'index',
                 intersect: false,
                 callbacks: {
-                  label: ctx => {
-                    if (ctx.dataset.yAxisID === 'y1') {
-                      return `${ctx.dataset.label} : ${ctx.raw !== null ? ctx.raw + '%' : 'N/A'}`;
-                    }
-                    return `${ctx.dataset.label} : ${ctx.raw} cartes`;
-                  }
+                  label: ctx => `${ctx.dataset.label} : ${ctx.raw} cartes`
                 }
               },
               legend: {
@@ -3839,21 +3808,11 @@
           }
         });
 
-        let totalRevs = 0, totalCorrect = 0;
-        (hist.reviews_count || []).forEach((c, idx) => {
-          totalRevs += c;
-          totalCorrect += (hist.correct_count[idx] || 0);
-        });
-        const avgRet = totalRevs > 0 ? Math.round((totalCorrect / totalRevs) * 100) : 0;
-        const retCol = avgRet >= 80 ? '#388e3c' : avgRet >= 70 ? '#f57c00' : '#d32f2f';
-        const lastMat = (hist.mature && hist.mature.length > 0) ? hist.mature[hist.mature.length - 1] : 0;
-        const totCards = lastMat + ((hist.recent && hist.recent.length > 0) ? hist.recent[hist.recent.length - 1] : 0) +
-          ((hist.learning && hist.learning.length > 0) ? hist.learning[hist.learning.length - 1] : 0) +
-          ((hist.new && hist.new.length > 0) ? hist.new[hist.new.length - 1] : 0) +
-          ((hist.suspended && hist.suspended.length > 0) ? hist.suspended[hist.suspended.length - 1] : 0);
-        const matPct = totCards > 0 ? Math.round((lastMat / totCards) * 100) : 0;
+        const curMat = (hist.mature && hist.mature.length > 0) ? hist.mature[hist.mature.length - 1] : 0;
+        const curRec = (hist.recent && hist.recent.length > 0) ? hist.recent[hist.recent.length - 1] : 0;
+        const curGreen = curMat + curRec;
         if (statsLabelEl) {
-          statsLabelEl.innerHTML = `Révisions : <b>${totalRevs}</b> — Rétention : <span style="color:${retCol}; font-weight:bold;">${avgRet}%</span> — Matures : <b>${lastMat}</b> (${matPct}%)`;
+          statsLabelEl.innerHTML = `Verdissement actuel : <b style="color:#2e7d32;">${curGreen} cartes</b> (Matures : <b>${curMat}</b> — Récentes : <b>${curRec}</b>)`;
         }
 
       } else if (currentStatesMode === 'percent') {
@@ -4084,106 +4043,6 @@
         if (statsLabelEl) {
           statsLabelEl.innerHTML = `Matures nettes : <span style="color:${netCol}; font-weight:bold;">${netSign}${totalNet}</span> (+${totalNew} / -${totalLap}) — Vélocité 7j : <b>${curVel}/j</b> — Activées : <b>${totalAct}</b>`;
         }
-
-      } else if (currentStatesMode === 'rcurve') {
-        if (titleEl) titleEl.innerText = "Courbe d'Oubli Réelle par Intervalle (R-Curve)";
-
-        const rCurve = data.r_curve || { labels: [], totals: [], successes: [], retention: [] };
-        const targetLine = (rCurve.labels || []).map(() => 85);
-
-        histStatesChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: rCurve.labels,
-            datasets: [
-              {
-                label: 'Rétention réelle (%)',
-                data: rCurve.retention,
-                borderColor: '#1976d2',
-                backgroundColor: '#1976d2',
-                borderWidth: 2.5,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                tension: 0.15,
-                yAxisID: 'y',
-                order: 1
-              },
-              {
-                label: 'Seuil cible (85%)',
-                data: targetLine,
-                borderColor: isNight ? '#888' : '#757575',
-                borderDash: [5, 4],
-                borderWidth: 1.5,
-                pointRadius: 0,
-                yAxisID: 'y',
-                order: 2
-              },
-              {
-                label: 'Volume de tests',
-                data: rCurve.totals,
-                type: 'bar',
-                backgroundColor: isNight ? 'rgba(100, 116, 139, 0.45)' : 'rgba(148, 163, 184, 0.35)',
-                borderWidth: 0,
-                yAxisID: 'y1',
-                order: 3
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                min: 50,
-                max: 100,
-                grid: { color: gridColor },
-                ticks: {
-                  color: textColor,
-                  callback: v => v + '%'
-                },
-                title: { display: true, text: 'Rétention réelle (%)', color: textColor }
-              },
-              y1: {
-                type: 'linear',
-                position: 'right',
-                beginAtZero: true,
-                grid: { display: false },
-                ticks: { color: textColor },
-                title: { display: true, text: 'Nombre de révisions testées', color: textColor }
-              },
-              x: {
-                grid: { display: false },
-                ticks: { color: textColor },
-                title: { display: true, text: 'Intervalle testé', color: textColor }
-              }
-            },
-            plugins: {
-              tooltip: {
-                mode: 'index',
-                intersect: false,
-                callbacks: {
-                  label: ctx => {
-                    if (ctx.dataset.yAxisID === 'y') {
-                      return `${ctx.dataset.label} : ${ctx.raw !== null ? ctx.raw + '%' : 'N/A'}`;
-                    }
-                    return `${ctx.dataset.label} : ${ctx.raw} révisions`;
-                  }
-                }
-              },
-              legend: {
-                position: 'bottom',
-                labels: { color: textColor, boxWidth: 12 }
-              }
-            }
-          }
-        });
-
-        const totalTested = (rCurve.totals || []).reduce((a, b) => a + b, 0);
-        const totalPassed = (rCurve.successes || []).reduce((a, b) => a + b, 0);
-        const overallRet = totalTested > 0 ? Math.round((totalPassed / totalTested) * 1000) / 10 : 0;
-        if (statsLabelEl) {
-          statsLabelEl.innerHTML = `Tests analysés : <b>${totalTested}</b> — Rétention moyenne : <b style="color:#2c7bb6;">${overallRet}%</b> — Seuil cible : <b>85%</b>`;
-        }
       }
     }
 
@@ -4193,22 +4052,10 @@
       const gridColor = isNight ? '#444' : '#ddd';
       const hist = data.history;
 
-      // Ensure view containers and toggle buttons match currentBacklogMode
       const splitView = document.getElementById('backlogSplitView');
-      const combView = document.getElementById('backlogCombinedView');
-      const btnSplit = document.getElementById('btnBacklogSplit');
-      const btnComb = document.getElementById('btnBacklogCombined');
-      if (splitView && combView) {
-        if (currentBacklogMode === 'split') {
-          splitView.style.display = 'flex';
-          combView.style.display = 'none';
-        } else {
-          splitView.style.display = 'none';
-          combView.style.display = 'block';
-        }
+      if (splitView) {
+        splitView.style.display = 'flex';
       }
-      if (btnSplit) btnSplit.classList.toggle('active', currentBacklogMode === 'split');
-      if (btnComb) btnComb.classList.toggle('active', currentBacklogMode === 'combined');
 
       const retentionRates = hist.reviews_count.map((c, idx) => {
         if (c === 0) return null;
@@ -4221,346 +4068,235 @@
       });
 
       // Destroy previous chart instances
-      if (histBacklogChart) { histBacklogChart.destroy(); histBacklogChart = null; }
       if (histBacklogTotalChart) { histBacklogTotalChart.destroy(); histBacklogTotalChart = null; }
       if (histBacklogVolChart) { histBacklogVolChart.destroy(); histBacklogVolChart = null; }
       if (histBacklogPerfChart) { histBacklogPerfChart.destroy(); histBacklogPerfChart = null; }
 
-      if (currentBacklogMode === 'split') {
-        // — Trend badge computation —
-        const overdueTrimmed = hist.overdue.filter(v => v > 0);
-        const trendBadgeEl = document.getElementById('backlogTrendBadge');
-        if (trendBadgeEl) {
-          if (overdueTrimmed.length >= 2) {
-            const half = Math.max(1, Math.floor(overdueTrimmed.length / 2));
-            const avgFirst = overdueTrimmed.slice(0, half).reduce((a, b) => a + b, 0) / half;
-            const avgLast  = overdueTrimmed.slice(-half).reduce((a, b) => a + b, 0) / half;
-            const delta = Math.round(avgLast - avgFirst);
-            if (delta > 0) {
-              trendBadgeEl.textContent = `↑ +${delta} cartes`;
-              trendBadgeEl.style.color = '#d32f2f';
-            } else if (delta < 0) {
-              trendBadgeEl.textContent = `↓ ${delta} cartes`;
-              trendBadgeEl.style.color = '#388e3c';
-            } else {
-              trendBadgeEl.textContent = '→ Stable';
-              trendBadgeEl.style.color = '#888';
-            }
+      // — Trend badge computation —
+      const overdueTrimmed = hist.overdue.filter(v => v > 0);
+      const trendBadgeEl = document.getElementById('backlogTrendBadge');
+      if (trendBadgeEl) {
+        if (overdueTrimmed.length >= 2) {
+          const half = Math.max(1, Math.floor(overdueTrimmed.length / 2));
+          const avgFirst = overdueTrimmed.slice(0, half).reduce((a, b) => a + b, 0) / half;
+          const avgLast  = overdueTrimmed.slice(-half).reduce((a, b) => a + b, 0) / half;
+          const delta = Math.round(avgLast - avgFirst);
+          if (delta > 0) {
+            trendBadgeEl.textContent = `↑ +${delta} cartes`;
+            trendBadgeEl.style.color = '#d32f2f';
+          } else if (delta < 0) {
+            trendBadgeEl.textContent = `↓ ${delta} cartes`;
+            trendBadgeEl.style.color = '#388e3c';
           } else {
-            trendBadgeEl.textContent = '';
+            trendBadgeEl.textContent = '→ Stable';
+            trendBadgeEl.style.color = '#888';
           }
-        }
-
-        // Canvas 1: Volume de révisions (barres) + Backlog total (ligne) — double axe Y
-        const ctxVol = document.getElementById('histBacklogVolChart')?.getContext('2d');
-        if (ctxVol) {
-          histBacklogVolChart = new Chart(ctxVol, {
-            type: 'bar',
-            data: {
-              labels: hist.dates,
-              datasets: [
-                {
-                  label: 'Révisions effectuées',
-                  data: hist.reviews_count,
-                  backgroundColor: isNight ? 'rgba(102,187,106,0.7)' : 'rgba(129,199,132,0.7)',
-                  borderRadius: 3,
-                  yAxisID: 'yBacklog',
-                  order: 2
-                },
-                {
-                  label: 'Cartes en retard (Backlog)',
-                  data: hist.overdue,
-                  borderColor: '#ef5350',
-                  backgroundColor: 'rgba(239, 83, 80, 0.1)',
-                  borderWidth: 2.5,
-                  fill: true,
-                  type: 'line',
-                  tension: 0.3,
-                  pointRadius: 0,
-                  pointHoverRadius: 5,
-                  pointBackgroundColor: '#ef5350',
-                  yAxisID: 'yBacklog',
-                  order: 1
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              interaction: { mode: 'index', intersect: false },
-              scales: {
-                yBacklog: {
-                  type: 'linear',
-                  position: 'left',
-                  beginAtZero: true,
-                  grid: { color: gridColor },
-                  ticks: { color: textColor },
-                  title: { display: true, text: 'Cartes', color: textColor },
-                  afterFit: (axis) => { axis.width = 65; }
-                },
-                // Axe fantôme à droite pour aligner la zone de dessin avec le graphique Performance (qui a yTime à droite)
-                yPhantom: {
-                  type: 'linear',
-                  position: 'right',
-                  display: true,
-                  grid: { display: false },
-                  ticks: { display: false },
-                  title: { display: false },
-                  border: { display: false },
-                  afterFit: (axis) => { axis.width = 65; }
-                },
-                x: { grid: { display: false }, ticks: { color: textColor, maxTicksLimit: 15 } }
-              },
-              plugins: {
-                legend: { position: 'top', align: 'end', labels: { color: textColor, boxWidth: 10, padding: 8 } },
-                tooltip: { mode: 'index', intersect: false }
-              },
-              onHover: (event, chartElement) => {
-                if (!histBacklogPerfChart) return;
-                if (chartElement && chartElement.length > 0) {
-                  const index = chartElement[0].index;
-                  histBacklogPerfChart.setActiveElements([
-                    { datasetIndex: 0, index }, { datasetIndex: 1, index }
-                  ]);
-                  histBacklogPerfChart.tooltip.setActiveElements([
-                    { datasetIndex: 0, index }, { datasetIndex: 1, index }
-                  ], { x: event.x || 0, y: event.y || 0 });
-                  histBacklogPerfChart.update('none');
-                } else {
-                  histBacklogPerfChart.setActiveElements([]);
-                  histBacklogPerfChart.tooltip.setActiveElements([], { x: 0, y: 0 });
-                  histBacklogPerfChart.update('none');
-                }
-              }
-            }
-          });
-        }
-
-        // Canvas 2: Performance (Rétention % & Temps moyen)
-        const ctxPerf = document.getElementById('histBacklogPerfChart')?.getContext('2d');
-        if (ctxPerf) {
-          histBacklogPerfChart = new Chart(ctxPerf, {
-            type: 'line',
-            data: {
-              labels: hist.dates,
-              datasets: [
-                {
-                  label: 'Taux de rétention réelle (%)',
-                  data: retentionRates,
-                  borderColor: '#ec407a',
-                  backgroundColor: 'transparent',
-                  borderWidth: 2.2,
-                  tension: 0.25,
-                  spanGaps: true,
-                  pointRadius: 0,
-                  pointHoverRadius: 5,
-                  pointBackgroundColor: '#ec407a',
-                  yAxisID: 'yRetention'
-                },
-                {
-                  label: 'Temps moyen (s/carte)',
-                  data: avgTimePerCardData,
-                  borderColor: '#26a69a',
-                  backgroundColor: 'transparent',
-                  borderWidth: 2,
-                  tension: 0.25,
-                  spanGaps: true,
-                  pointRadius: 0,
-                  pointHoverRadius: 5,
-                  pointBackgroundColor: '#26a69a',
-                  yAxisID: 'yTime'
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              interaction: { mode: 'index', intersect: false },
-              scales: {
-                yRetention: {
-                  type: 'linear',
-                  position: 'left',
-                  min: 0,
-                  max: 100,
-                  grid: { color: gridColor },
-                  ticks: { color: '#ec407a', callback: (val) => `${val}%` },
-                  title: { display: true, text: 'Rétention (%)', color: '#ec407a' },
-                  afterFit: (axis) => { axis.width = 65; }
-                },
-                yTime: {
-                  type: 'linear',
-                  position: 'right',
-                  beginAtZero: true,
-                  grid: { display: false },
-                  ticks: { color: '#26a69a', callback: (val) => `${val}s` },
-                  title: { display: true, text: 'Temps moyen (s/carte)', color: '#26a69a' },
-                  afterFit: (axis) => { axis.width = 65; }
-                },
-                x: {
-                  grid: { display: false },
-                  ticks: { color: textColor, maxTicksLimit: 15 }
-                }
-              },
-              plugins: {
-                legend: {
-                  position: 'top',
-                  align: 'end',
-                  labels: { color: textColor, boxWidth: 10, padding: 8 }
-                },
-                tooltip: {
-                  mode: 'index',
-                  intersect: false
-                }
-              },
-              onHover: (event, chartElement) => {
-                const syncCharts = [histBacklogVolChart].filter(Boolean);
-                if (chartElement && chartElement.length > 0) {
-                  const index = chartElement[0].index;
-                  syncCharts.forEach(c => {
-                    c.setActiveElements(c.data.datasets.map((_, di) => ({ datasetIndex: di, index })));
-                    c.tooltip.setActiveElements(c.data.datasets.map((_, di) => ({ datasetIndex: di, index })), { x: event.x || 0, y: event.y || 0 });
-                    c.update('none');
-                  });
-                } else {
-                  syncCharts.forEach(c => {
-                    c.setActiveElements([]);
-                    c.tooltip.setActiveElements([], { x: 0, y: 0 });
-                    c.update('none');
-                  });
-                }
-              }
-            }
-          });
-        }
-
-        // Attach mouseleave to clear hover on both charts
-        const canvasVolEl = document.getElementById('histBacklogVolChart');
-        const canvasPerfEl = document.getElementById('histBacklogPerfChart');
-        const clearAllBacklogHover = () => {
-          [histBacklogVolChart, histBacklogPerfChart].forEach(c => {
-            if (!c) return;
-            c.setActiveElements([]);
-            c.tooltip.setActiveElements([], { x: 0, y: 0 });
-            c.update('none');
-          });
-        };
-        if (canvasVolEl) canvasVolEl.onmouseleave = clearAllBacklogHover;
-        if (canvasPerfEl) canvasPerfEl.onmouseleave = clearAllBacklogHover;
-
-      } else {
-        // Combined View (Single canvas with clean styling, no fixed dots, smooth curves)
-        const ctx2 = document.getElementById('histBacklogChart')?.getContext('2d');
-        if (ctx2) {
-          histBacklogChart = new Chart(ctx2, {
-            type: 'bar',
-            data: {
-              labels: hist.dates,
-              datasets: [
-                {
-                  label: 'Révisions effectuées',
-                  data: hist.reviews_count,
-                  backgroundColor: isNight ? '#66bb6a' : '#81c784',
-                  borderRadius: 3,
-                  yAxisID: 'y',
-                  order: 4
-                },
-                {
-                  label: 'Cartes en retard (Backlog)',
-                  data: hist.overdue,
-                  borderColor: '#ef5350',
-                  backgroundColor: 'rgba(239, 83, 80, 0.05)',
-                  borderWidth: 2,
-                  type: 'line',
-                  tension: 0.25,
-                  pointRadius: 0,
-                  pointHoverRadius: 5,
-                  pointBackgroundColor: '#ef5350',
-                  yAxisID: 'y',
-                  order: 3
-                },
-                {
-                  label: 'Taux de rétention réelle (%)',
-                  data: retentionRates,
-                  borderColor: '#ec407a',
-                  backgroundColor: 'transparent',
-                  type: 'line',
-                  yAxisID: 'yRetention',
-                  tension: 0.25,
-                  spanGaps: true,
-                  borderWidth: 2.5,
-                  pointRadius: 0,
-                  pointHoverRadius: 5,
-                  pointBackgroundColor: '#ec407a',
-                  order: 1
-                },
-                {
-                  label: 'Temps moyen (s/carte)',
-                  data: avgTimePerCardData,
-                  borderColor: '#26a69a',
-                  backgroundColor: 'transparent',
-                  borderWidth: 2,
-                  type: 'line',
-                  tension: 0.25,
-                  spanGaps: true,
-                  pointRadius: 0,
-                  pointHoverRadius: 5,
-                  pointBackgroundColor: '#26a69a',
-                  yAxisID: 'yTime',
-                  order: 2
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: { color: gridColor },
-                  ticks: { color: textColor },
-                  title: { display: true, text: 'Nombre de cartes', color: textColor }
-                },
-                yRetention: {
-                  display: 'auto',
-                  position: 'right',
-                  min: 0,
-                  max: 100,
-                  grid: { display: false },
-                  ticks: { color: '#ec407a', callback: (val) => `${val}%` },
-                  title: { display: true, text: 'Rétention (%)', color: '#ec407a' }
-                },
-                yTime: {
-                  display: 'auto',
-                  position: 'right',
-                  beginAtZero: true,
-                  grid: { display: false },
-                  ticks: { color: '#26a69a', callback: (val) => `${val}s` },
-                  title: { display: true, text: 'Temps moyen (s/carte)', color: '#26a69a' }
-                },
-                x: {
-                  grid: { display: false },
-                  ticks: { color: textColor, maxTicksLimit: 15 }
-                }
-              },
-              plugins: {
-                tooltip: {
-                  mode: 'index',
-                  intersect: false,
-                  callbacks: {
-                    afterBody: function(tooltipItems) {
-                      return [];
-                    }
-                  }
-                },
-                legend: {
-                  position: 'bottom',
-                  labels: { color: textColor, boxWidth: 12 }
-                }
-              }
-            }
-          });
+        } else {
+          trendBadgeEl.textContent = '';
         }
       }
+
+      // Canvas 1: Volume de révisions (barres) + Backlog total (ligne) — double axe Y
+      const ctxVol = document.getElementById('histBacklogVolChart')?.getContext('2d');
+      if (ctxVol) {
+        histBacklogVolChart = new Chart(ctxVol, {
+          type: 'bar',
+          data: {
+            labels: hist.dates,
+            datasets: [
+              {
+                type: 'line',
+                label: 'Cartes en retard (Backlog)',
+                data: hist.overdue,
+                borderColor: '#ef5350',
+                backgroundColor: 'rgba(239, 83, 80, 0.08)',
+                borderWidth: 2.5,
+                tension: 0.25,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#ef5350',
+                yAxisID: 'yBacklog',
+                order: 1
+              },
+              {
+                type: 'bar',
+                label: 'Révisions effectuées',
+                data: hist.reviews_count,
+                backgroundColor: isNight ? '#66bb6a' : '#81c784',
+                borderRadius: 3,
+                yAxisID: 'yRev',
+                order: 2
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              yRev: {
+                position: 'left',
+                beginAtZero: true,
+                grid: { color: gridColor },
+                ticks: { color: textColor },
+                title: { display: true, text: 'Révisions', color: textColor }
+              },
+              yBacklog: {
+                position: 'right',
+                beginAtZero: true,
+                grid: { display: false },
+                ticks: { color: '#ef5350' },
+                title: { display: true, text: 'Backlog (cartes)', color: '#ef5350' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: textColor, maxTicksLimit: 15 }
+              }
+            },
+            plugins: {
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              },
+              legend: {
+                position: 'bottom',
+                labels: { color: textColor, boxWidth: 12 }
+              }
+            },
+            onHover: (event, activeElements) => {
+              if (!histBacklogPerfChart) return;
+              if (activeElements && activeElements.length > 0) {
+                const idx = activeElements[0].index;
+                histBacklogPerfChart.setActiveElements([
+                  { datasetIndex: 0, index: idx },
+                  { datasetIndex: 1, index: idx }
+                ]);
+                histBacklogPerfChart.tooltip.setActiveElements([
+                  { datasetIndex: 0, index: idx },
+                  { datasetIndex: 1, index: idx }
+                ], { x: event.x, y: event.y });
+                histBacklogPerfChart.update('none');
+              } else {
+                histBacklogPerfChart.setActiveElements([]);
+                histBacklogPerfChart.tooltip.setActiveElements([], { x: 0, y: 0 });
+                histBacklogPerfChart.update('none');
+              }
+            }
+          }
+        });
+      }
+
+      // Canvas 2: Performance — Rétention % (gauche) & Temps moyen par carte (droite)
+      const ctxPerf = document.getElementById('histBacklogPerfChart')?.getContext('2d');
+      if (ctxPerf) {
+        histBacklogPerfChart = new Chart(ctxPerf, {
+          type: 'line',
+          data: {
+            labels: hist.dates,
+            datasets: [
+              {
+                label: 'Rétention réelle (%)',
+                data: retentionRates,
+                borderColor: '#ec407a',
+                backgroundColor: 'transparent',
+                tension: 0.25,
+                spanGaps: true,
+                borderWidth: 2.5,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#ec407a',
+                yAxisID: 'yRet',
+                order: 1
+              },
+              {
+                label: 'Temps moyen (s/carte)',
+                data: avgTimePerCardData,
+                borderColor: '#26a69a',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                tension: 0.25,
+                spanGaps: true,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#26a69a',
+                yAxisID: 'ySec',
+                order: 2
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              yRet: {
+                position: 'left',
+                min: 0,
+                max: 100,
+                grid: { color: gridColor },
+                ticks: { color: '#ec407a', callback: val => `${val}%` },
+                title: { display: true, text: 'Rétention (%)', color: '#ec407a' }
+              },
+              ySec: {
+                position: 'right',
+                beginAtZero: true,
+                grid: { display: false },
+                ticks: { color: '#26a69a', callback: val => `${val}s` },
+                title: { display: true, text: 'Temps (s/carte)', color: '#26a69a' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: textColor, maxTicksLimit: 15 }
+              }
+            },
+            plugins: {
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              },
+              legend: {
+                position: 'bottom',
+                labels: { color: textColor, boxWidth: 12 }
+              }
+            },
+            onHover: (event, activeElements) => {
+              const syncCharts = [histBacklogVolChart].filter(Boolean);
+              if (activeElements && activeElements.length > 0) {
+                const idx = activeElements[0].index;
+                syncCharts.forEach(c => {
+                  c.setActiveElements([
+                    { datasetIndex: 0, index: idx },
+                    { datasetIndex: 1, index: idx }
+                  ]);
+                  c.tooltip.setActiveElements([
+                    { datasetIndex: 0, index: idx },
+                    { datasetIndex: 1, index: idx }
+                  ], { x: event.x, y: event.y });
+                  c.update('none');
+                });
+              } else {
+                syncCharts.forEach(c => {
+                  c.setActiveElements([]);
+                  c.tooltip.setActiveElements([], { x: 0, y: 0 });
+                  c.update('none');
+                });
+              }
+            }
+          }
+        });
+      }
+
+      // Attach mouseleave to clear hover on both charts
+      const canvasVolEl = document.getElementById('histBacklogVolChart');
+      const canvasPerfEl = document.getElementById('histBacklogPerfChart');
+      const clearAllBacklogHover = () => {
+        [histBacklogVolChart, histBacklogPerfChart].forEach(c => {
+          if (!c) return;
+          c.setActiveElements([]);
+          c.tooltip.setActiveElements([], { x: 0, y: 0 });
+          c.update('none');
+        });
+      };
+      if (canvasVolEl) canvasVolEl.onmouseleave = clearAllBacklogHover;
+      if (canvasPerfEl) canvasPerfEl.onmouseleave = clearAllBacklogHover;
     }
 
     // Tab switcher event listeners
@@ -4665,7 +4401,7 @@
         if (isHistoryActive) {
           const historyCharts = [
             histStatesChart, histBacklogVolChart, histBacklogPerfChart,
-            histBacklogChart, forecastChartInstance
+            forecastChartInstance
           ].filter(c => c && c.canvas && c.canvas.offsetParent !== null);
 
           if (historyCharts.length === 0) return;
