@@ -652,12 +652,21 @@
         <button class="tab active" id="tabOverview" data-i18n="tab_overview">Vue d'ensemble</button>
         <button class="tab" id="tabHistory" data-i18n="tab_history">Révisions Stats</button>
       </div>
-      <button id="settingsBtn" class="settings-gear-btn" title="Réglages & Paramètres" data-i18n-title="settings_btn_title">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-      </button>
+      <div class="header-nav-actions">
+        <button id="refreshStatsBtn" class="header-action-btn" title="Actualiser les données" data-i18n-title="refresh_btn_title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+        <button id="settingsBtn" class="settings-gear-btn header-action-btn" title="Réglages & Paramètres" data-i18n-title="settings_btn_title">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
     </div>
     <div class="top-controls">
       <!-- Group 1: Scope & Rang -->
@@ -1158,6 +1167,16 @@
 
   <script>
     /*__DATA_INJECTION__*/  // window.EDN_DATA injected by Python
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
 
     // helper pycmd wrapper
     function send_py(cmd) {
@@ -1805,12 +1824,12 @@
         const { num, title } = formatItemTitle(it.display_name || it.tag);
 
         html += `
-          <div class="item modern-card" onclick="showDetailForTag('${it.tag}')">
-            <button class="exclude-btn" title="Masquer / Exclure" onclick="event.stopPropagation(); excludeItem('${it.tag}')"></button>
+          <div class="item modern-card" data-tag="${escapeHtml(it.tag)}" onclick="showDetailForTag(this.dataset.tag)">
+            <button class="exclude-btn" title="Masquer / Exclure" data-tag="${escapeHtml(it.tag)}" onclick="event.stopPropagation(); excludeItem(this.dataset.tag)"></button>
             
             <div class="card-header-row">
-              ${num ? `<span class="card-num-badge">${num}</span>` : ''}
-              <div class="card-title-text" title="${it.display_name || it.tag}">${title}</div>
+              ${num ? `<span class="card-num-badge">${escapeHtml(num)}</span>` : ''}
+              <div class="card-title-text" title="${escapeHtml(it.display_name || it.tag)}">${escapeHtml(title)}</div>
             </div>
 
             <div class="card-progress-section">
@@ -2055,10 +2074,10 @@
           const p = pieTotal > 0 ? ((d.val / pieTotal) * 100).toFixed(2) + '%' : '0%';
           legendHTML += `
     <div class="legend-row" style="display:flex; justify-content:space-between; margin-bottom:4px; align-items:center; cursor:pointer;"
-      onclick="openSlice('${d.key}')" title="Ouvrir '${d.label}' dans le navigateur">
+      data-key="${escapeHtml(d.key)}" onclick="openSlice(this.dataset.key)" title="Ouvrir '${escapeHtml(d.label)}' dans le navigateur">
       <div style="display:flex; align-items:center; gap:8px;">
         <span style="width:12px; height:12px; background:${d.color}; display:inline-block;"></span>
-        <span style="text-decoration:underline;">${d.label}</span>
+        <span style="text-decoration:underline;">${escapeHtml(d.label)}</span>
       </div>
       <div style="display:flex; gap:20px;">
         <span style="font-weight:bold;">${d.val}</span>
@@ -2082,10 +2101,10 @@
                 const subP = pieTotal > 0 ? ((sub.val / pieTotal) * 100).toFixed(2) + '%' : '0%';
                 legendHTML += `
     <div class="legend-row sub-legend" style="display:flex; justify-content:space-between; margin-bottom:4px; padding-left:20px; align-items:center; cursor:pointer; font-size:12px; opacity:0.85;"
-      onclick="openSlice('${sub.key}')" title="Ouvrir '${d.label} - ${sub.label}' dans le navigateur">
+      data-key="${escapeHtml(sub.key)}" onclick="openSlice(this.dataset.key)" title="Ouvrir '${escapeHtml(d.label)} - ${escapeHtml(sub.label)}' dans le navigateur">
       <div style="display:flex; align-items:center; gap:6px;">
         <span style="width:8px; height:8px; background:${sub.color}; display:inline-block; border-radius:50%;"></span>
-        <span style="text-decoration:underline; font-style:italic;">${sub.label}</span>
+        <span style="text-decoration:underline; font-style:italic;">${escapeHtml(sub.label)}</span>
       </div>
       <div style="display:flex; gap:20px;">
         <span>${sub.val}</span>
@@ -2547,6 +2566,22 @@
     function ensureExcludedTagsPopulatedInSettings() {
       populateExcludedTagsCheckboxes();
     }
+
+    document.getElementById('refreshStatsBtn')?.addEventListener('click', () => {
+      const btn = document.getElementById('refreshStatsBtn');
+      if (btn) btn.classList.add('is-spinning');
+      const isHistoryActive = document.getElementById('tabHistory')?.classList.contains('active');
+      if (isHistoryActive) {
+        loadHistoryForecastData();
+        triggerRecompute(true);
+      } else {
+        triggerRecompute(true);
+        loadHistoryForecastData();
+      }
+      setTimeout(() => {
+        if (btn) btn.classList.remove('is-spinning');
+      }, 1000);
+    });
 
     document.getElementById('settingsBtn').addEventListener('click', () => {
       settingsModal.style.display = 'flex';
@@ -3316,6 +3351,7 @@
       }
 
       STATE.data = data;
+      document.getElementById('refreshStatsBtn')?.classList.remove('is-spinning');
       renderChart();
       renderPages();
       updateHelpText();
@@ -3586,6 +3622,7 @@
     }
 
     window.EDN_receiveHistoryForecast = function(data) {
+      document.getElementById('refreshStatsBtn')?.classList.remove('is-spinning');
       console.log("Received history and forecast data:", data);
       if (!data) return;
       renderHistoryCharts(data);
@@ -4113,8 +4150,13 @@
                 borderWidth: 2.5,
                 tension: 0.25,
                 pointRadius: 0,
-                pointHoverRadius: 5,
+                pointHoverRadius: 6,
                 pointBackgroundColor: '#ef5350',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 2,
+                pointHitRadius: 10,
                 yAxisID: 'yBacklog',
                 order: 1
               },
@@ -4132,6 +4174,10 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
             scales: {
               yRev: {
                 position: 'left',
@@ -4202,8 +4248,13 @@
                 spanGaps: true,
                 borderWidth: 2.5,
                 pointRadius: 0,
-                pointHoverRadius: 5,
+                pointHoverRadius: 6,
                 pointBackgroundColor: '#ec407a',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 2,
+                pointHitRadius: 10,
                 yAxisID: 'yRet',
                 order: 1
               },
@@ -4216,8 +4267,13 @@
                 tension: 0.25,
                 spanGaps: true,
                 pointRadius: 0,
-                pointHoverRadius: 5,
+                pointHoverRadius: 6,
                 pointBackgroundColor: '#26a69a',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 2,
+                pointHitRadius: 10,
                 yAxisID: 'ySec',
                 order: 2
               }
@@ -4226,6 +4282,10 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
             scales: {
               yRet: {
                 position: 'left',

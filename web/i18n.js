@@ -4,6 +4,7 @@
   "fr": {
     "tab_overview": "Vue d'ensemble",
     "tab_history": "Révisions Stats",
+    "refresh_btn_title": "Actualiser les données",
     "settings_btn_title": "Réglages & Paramètres",
     "lbl_show": "Afficher :",
     "opt_items": "Items",
@@ -150,6 +151,7 @@
   "en": {
     "tab_overview": "Overview",
     "tab_history": "History & Forecasts",
+    "refresh_btn_title": "Refresh Stats",
     "settings_btn_title": "Settings & Preferences",
     "lbl_show": "Show:",
     "opt_items": "Items",
@@ -296,6 +298,7 @@
   "es": {
     "tab_overview": "Visión general",
     "tab_history": "Historial y Pronósticos",
+    "refresh_btn_title": "Actualizar datos",
     "settings_btn_title": "Ajustes y Parámetros",
     "lbl_show": "Mostrar:",
     "opt_items": "Items",

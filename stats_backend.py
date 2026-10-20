@@ -787,7 +787,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
         dids_str = ",".join(str(int(did)) for did in target_deck_ids)
         rows = mw.col.db.all(f"""
             SELECT 
-                c.id as cid, c.nid, c.type, c.queue, c.ivl,
+                c.id as cid, c.nid, c.type, c.queue, c.ivl, c.data,
                 n.tags
             FROM cards c
             JOIN notes n ON c.nid = n.id
@@ -796,7 +796,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     else:
         rows = mw.col.db.all("""
             SELECT 
-                c.id as cid, c.nid, c.type, c.queue, c.ivl,
+                c.id as cid, c.nid, c.type, c.queue, c.ivl, c.data,
                 n.tags
             FROM cards c
             JOIN notes n ON c.nid = n.id
@@ -828,7 +828,8 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
             },
             'nids': set(),  # Track unique notes
             'nid_card_states': {},  # {nid: [(base_type, suspension), ...]}
-            'subject_overlap_nids': set()
+            'subject_overlap_nids': set(),
+            'fsrs_diffs': []
         }
     
     # Prepare subject filter roots for overlap check
@@ -853,9 +854,18 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     #   - "edn" (grandparent)
     target_set = set(stats_by_tag.keys())  # All target tags in lowercase
     
-    for cid, nid, typ, queue, ivl, tags_str in rows:
+    for cid, nid, typ, queue, ivl, c_data_str, tags_str in rows:
         if not tags_str:
             continue
+        
+        card_diff = None
+        if c_data_str:
+            try:
+                c_dict = json.loads(c_data_str)
+                if isinstance(c_dict, dict) and "d" in c_dict:
+                    card_diff = float(c_dict["d"])
+            except (json.JSONDecodeError, TypeError, ValueError):
+                pass
         
         # Parse note tags
         note_tags = tags_str.split()
@@ -931,6 +941,8 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
             stat['nid_card_states'][nid].append((base_type, suspension))
             if matches_subject:
                 stat['subject_overlap_nids'].add(nid)
+            if card_diff is not None:
+                stat['fsrs_diffs'].append(card_diff)
     
     process_time = time.time() - process_start
     
@@ -1065,6 +1077,11 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
         studied_ratio = active_studied / unsuspended if unsuspended > 0 else 0.0
         studied_total_ratio = active_studied / total if total > 0 else 0.0
         
+        fsrs_diffs = stat.get('fsrs_diffs', [])
+        avg_difficulty = 0.0
+        if fsrs_diffs:
+            avg_difficulty = clamp01((sum(fsrs_diffs) / len(fsrs_diffs)) / 10.0)
+
         result = {
             'tag': stat['tag'],
             'display_name': format_name(stat['tag']),
@@ -1072,53 +1089,17 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
             'total': total,
             'percent': percent,
             'mastery': mastery,
-            'difficulty': 0.0,  # Will be calculated with FSRS below
+            'difficulty': avg_difficulty,
             'difficulty_components': {},
             'studied_ratio': min(studied_ratio, 1.0),
             'studied_total_ratio': studied_total_ratio,
             'unsuspended': unsuspended,
-            'subject_overlap_count': len(stat['subject_overlap_nids']),
-            '_nids': list(stat['nids'])  # Keep nids for FSRS calculation
+            'subject_overlap_count': len(stat['subject_overlap_nids'])
         }
         items.append(result)
     
     build_time = time.time() - build_start
-    
-    # ========== FSRS DIFFICULTY (separate pass) ==========
-    fsrs_start = time.time()
-    fsrs_count = 0
-    
-    for item in items:
-        nids = item.get('_nids', [])
-        if not nids:
-            continue
-        
-        total_difficulty = 0.0
-        card_count = 0
-        
-        # Sample up to 20 notes for FSRS calculation (performance optimization)
-        sample_nids = nids[:20] if len(nids) > 20 else nids
-        
-        for nid in sample_nids:
-            try:
-                note = mw.col.get_note(nid)
-                for card in note.cards():
-                    ms = getattr(card, 'memory_state', None)
-                    if ms and hasattr(ms, 'difficulty'):
-                        total_difficulty += ms.difficulty
-                        card_count += 1
-            except:
-                pass
-        
-        if card_count > 0:
-            # FSRS difficulty is 1-10, normalize to 0-1
-            item['difficulty'] = clamp01((total_difficulty / card_count) / 10.0)
-            fsrs_count += 1
-        
-        # Remove temp nids
-        del item['_nids']
-    
-    fsrs_time = time.time() - fsrs_start
+    fsrs_time = 0.0
     total_time = time.time() - start_time
     
     
@@ -1173,7 +1154,7 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
     # 1. Query cards info
     if target_deck_ids:
         dids_str = ",".join(str(int(did)) for did in target_deck_ids)
-        cards_rows = mw.col.db.all(f"SELECT id, queue, type, ivl, due FROM cards WHERE did IN ({dids_str})")
+        cards_rows = mw.col.db.all(f"SELECT id, queue, type, ivl, due, data FROM cards WHERE did IN ({dids_str})")
         rev_rows = mw.col.db.all(f"""
             SELECT revlog.cid as cid, revlog.id as id, revlog.ivl as ivl, revlog.ease as ease, revlog.type as type, revlog.time as time, revlog.lastIvl as lastIvl
             FROM revlog
@@ -1193,7 +1174,7 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
             ORDER BY 1, 2 ASC
         """, cutoff_ts_ms, cutoff_ts_ms)
     else:
-        cards_rows = mw.col.db.all("SELECT id, queue, type, ivl, due FROM cards")
+        cards_rows = mw.col.db.all("SELECT id, queue, type, ivl, due, data FROM cards")
         rev_rows = mw.col.db.all("""
             SELECT cid as cid, id as id, ivl as ivl, ease as ease, type as type, time as time, lastIvl as lastIvl
             FROM revlog
@@ -1211,12 +1192,21 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
         """, cutoff_ts_ms, cutoff_ts_ms)
     
     cards_info = {}
-    for cid, queue, typ, ivl, due in cards_rows:
+    for cid, queue, typ, ivl, due, c_data in cards_rows:
+        stability = None
+        if c_data:
+            try:
+                d_json = json.loads(c_data)
+                if isinstance(d_json, dict) and "s" in d_json:
+                    stability = float(d_json["s"])
+            except (json.JSONDecodeError, TypeError, ValueError):
+                pass
         cards_info[cid] = {
             'queue': queue,
             'type': typ,
             'ivl': ivl,
-            'due': due
+            'due': due,
+            'stability': stability
         }
         
     reviews_by_card = {}
@@ -1452,14 +1442,9 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
         due = c_info['due']
         ivl = c_info['ivl']
         
-        S = float(max(1.0, ivl))
-        try:
-            card = mw.col.get_card(cid)
-            ms = getattr(card, 'memory_state', None)
-            if ms and hasattr(ms, 'stability'):
-                S = float(ms.stability)
-        except:
-            pass
+        S = c_info.get('stability')
+        if S is None:
+            S = float(max(1.0, ivl))
             
         if queue == 2:
             d = due - today_day

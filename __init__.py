@@ -366,7 +366,7 @@ def open_edn_progress() -> None:
                                 display_name = f"{int(parts[0])} — {parts[1].replace('-', ' ')}"
                         except: pass
                     # Send back to JS
-                    web.eval(f"window.EDN_addCustomTag('{tag}', '{display_name}');")
+                    web.eval(f"window.EDN_addCustomTag({json.dumps(tag)}, {json.dumps(display_name)});")
                 return
 
             if cmd.startswith("get_tag_stats "):
