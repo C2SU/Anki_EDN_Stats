@@ -118,7 +118,7 @@ body.nightMode .chart-toggle-group {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   user-select: none;
   display: inline-flex;
   align-items: center;
@@ -707,7 +707,7 @@ body.nightMode .subchart-header {
   max-height: 88vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   border: 1px solid rgba(0, 0, 0, 0.08);
   overflow: hidden;
   contain: paint;
@@ -717,7 +717,7 @@ body.nightMode .settings-modal-dialog {
   background: #2b2b2d;
   color: #e5e5e5;
   border-color: #444;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* Modal Header */
@@ -924,13 +924,13 @@ body.nightMode .settings-field-title {
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 12px;
-  background: #eef2ff;
-  color: #4338ca;
+  background: #f0f4f8;
+  color: #2c7bb6;
 }
 
 body.nightMode .settings-field-badge {
-  background: #3730a3;
-  color: #c7d2fe;
+  background: #1e3a5f;
+  color: #90caf9;
 }
 
 .settings-field-hint {
