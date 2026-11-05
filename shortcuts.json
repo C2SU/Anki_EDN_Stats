@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Ficello/Anki-Customize-Keyboard-Shortcuts/main/schemas/shortcuts-v1.json",
+  "schema_version": 1,
+  "addon_name": "Anki EDN - Statistiques et Suivi",
+  "shortcuts": [
+    {
+      "id": "edn_stats.toggle_dashboard",
+      "label": "Afficher ou masquer le panneau EDN Stats",
+      "scope": "main",
+      "default": "Ctrl+U",
+      "fallbacks": ["Ctrl+Shift+U", "Alt+U"],
+      "config_key": "stats_shortcut"
+    }
+  ]
+}

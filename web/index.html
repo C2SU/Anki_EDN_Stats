@@ -4134,6 +4134,13 @@
       }
 
       // Canvas 1: Volume de révisions (barres) + Backlog total (ligne) — double axe Y
+      const maxVolValue = Math.max(
+        ...hist.reviews_count.filter(v => typeof v === 'number' && !isNaN(v)),
+        ...hist.overdue.filter(v => typeof v === 'number' && !isNaN(v)),
+        10
+      );
+      const yAxisMax = Math.ceil(maxVolValue * 1.05);
+
       const ctxVol = document.getElementById('histBacklogVolChart')?.getContext('2d');
       if (ctxVol) {
         histBacklogVolChart = new Chart(ctxVol, {
@@ -4182,6 +4189,7 @@
               yRev: {
                 position: 'left',
                 beginAtZero: true,
+                max: yAxisMax,
                 grid: { color: gridColor },
                 ticks: { color: textColor },
                 title: { display: true, text: 'Révisions', color: textColor }
@@ -4189,6 +4197,7 @@
               yBacklog: {
                 position: 'right',
                 beginAtZero: true,
+                max: yAxisMax,
                 grid: { display: false },
                 ticks: { color: '#ef5350' },
                 title: { display: true, text: 'Backlog (cartes)', color: '#ef5350' }

@@ -164,28 +164,23 @@ def get_target_deck_ids(deck_choice="__AUTO__"):
 
 
 def cards_of_note(note, target_deck_ids=None):
+    def _card_matches(card):
+        if target_deck_ids is None:
+            return True
+        did = getattr(card, 'did', None)
+        odid = getattr(card, 'odid', 0)
+        return (did in target_deck_ids) or (odid in target_deck_ids)
+
     try:
         c = note.cards()
         if isinstance(c, list):
-            if target_deck_ids is not None:
-                return [card for card in c if getattr(card, 'did', None) in target_deck_ids]
-            return c
+            return [card for card in c if _card_matches(card)]
     except Exception:
         pass
     try:
         cids = mw.col.find_cards(f"nid:{note.id}")
         cards = [mw.col.get_card(cid) for cid in cids]
-        if target_deck_ids is not None:
-            return [card for card in cards if getattr(card, 'did', None) in target_deck_ids]
-        return cards
-    except Exception:
-        return []
-    try:
-        cids = mw.col.find_cards(f"nid:{note.id}")
-        cards = [mw.col.get_card(cid) for cid in cids]
-        if target_deck_ids is not None:
-            return [card for card in cards if getattr(card, 'did', None) in target_deck_ids]
-        return cards
+        return [card for card in cards if _card_matches(card)]
     except Exception:
         return []
 
@@ -791,7 +786,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
                 n.tags
             FROM cards c
             JOIN notes n ON c.nid = n.id
-            WHERE c.did IN ({dids_str})
+            WHERE (c.did IN ({dids_str}) OR c.odid IN ({dids_str}))
         """)
     else:
         rows = mw.col.db.all("""
@@ -1154,27 +1149,27 @@ def collect_history_and_forecast(window_days=90, forecast_days=30, selected_deck
     # 1. Query cards info
     if target_deck_ids:
         dids_str = ",".join(str(int(did)) for did in target_deck_ids)
-        cards_rows = mw.col.db.all(f"SELECT id, queue, type, ivl, due, data FROM cards WHERE did IN ({dids_str})")
+        cards_rows = mw.col.db.all(f"SELECT id, queue, type, ivl, CASE WHEN odid > 0 THEN odue ELSE due END as due, data FROM cards WHERE (did IN ({dids_str}) OR odid IN ({dids_str}))")
         rev_rows = mw.col.db.all(f"""
             SELECT revlog.cid as cid, revlog.id as id, revlog.ivl as ivl, revlog.ease as ease, revlog.type as type, revlog.time as time, revlog.lastIvl as lastIvl
             FROM revlog
             JOIN cards ON revlog.cid = cards.id
-            WHERE cards.did IN ({dids_str}) AND revlog.id >= ?
+            WHERE (cards.did IN ({dids_str}) OR cards.odid IN ({dids_str})) AND revlog.id >= ?
             UNION ALL
             SELECT revlog.cid as cid, revlog.id as id, revlog.ivl as ivl, revlog.ease as ease, revlog.type as type, revlog.time as time, revlog.lastIvl as lastIvl
             FROM revlog
             JOIN cards ON revlog.cid = cards.id
-            WHERE cards.did IN ({dids_str}) AND revlog.id IN (
+            WHERE (cards.did IN ({dids_str}) OR cards.odid IN ({dids_str})) AND revlog.id IN (
                 SELECT MAX(r2.id)
                 FROM revlog r2
                 JOIN cards c2 ON r2.cid = c2.id
-                WHERE c2.did IN ({dids_str}) AND r2.id < ?
+                WHERE (c2.did IN ({dids_str}) OR c2.odid IN ({dids_str})) AND r2.id < ?
                 GROUP BY r2.cid
             )
             ORDER BY 1, 2 ASC
         """, cutoff_ts_ms, cutoff_ts_ms)
     else:
-        cards_rows = mw.col.db.all("SELECT id, queue, type, ivl, due, data FROM cards")
+        cards_rows = mw.col.db.all("SELECT id, queue, type, ivl, CASE WHEN odid > 0 THEN odue ELSE due END as due, data FROM cards")
         rev_rows = mw.col.db.all("""
             SELECT cid as cid, id as id, ivl as ivl, ease as ease, type as type, time as time, lastIvl as lastIvl
             FROM revlog
