@@ -1,6 +1,6 @@
 # stats_logic.py — EDN stats & difficulty (renamed to force reload)
 from aqt import mw
-import time, os, json, math
+import time, os, json, math, re
 from statistics import median, mean
 from .logger import log, perf_log
 
@@ -67,13 +67,50 @@ def _all_subject_tags(blacklist=None):
     return sorted([t for t in tags if is_valid(t)])
 
 def _all_item_tags():
-    return sorted([t for t in mw.col.tags.all() if t.startswith("EDN::item-")])
+    def is_item(t):
+        tl = t.lower()
+        return tl.startswith("edn::item-") or tl.startswith("edn::item::") or tl.startswith("item-") or tl.startswith("item::")
+    return sorted([t for t in mw.col.tags.all() if is_item(t)])
 
 def _all_sdd_tags():
     def is_sdd(t):
         t = t.lower()
         return t.startswith("edn::sdd") or t.startswith("edn::ssdd") or t.startswith("sdd") or t.startswith("ssdd")
     return sorted([t for t in mw.col.tags.all() if is_sdd(t)])
+
+
+def format_item_or_sdd_display_name(tag: str) -> str:
+    """Formatte un tag EDN en libellé soigné (ex: '27 — Risques fœtaux' ou '111 — Saignement').
+    Garantit la compatibilité ascendante et descendante avec les formats ::item- et ::item:: ainsi que ::SDD- et ::sdd::.
+    """
+    try:
+        m_item = re.search(r"::item(?:-|::)0*(\d+)[_-]?(.*)$", tag, re.IGNORECASE)
+        if m_item:
+            num = m_item.group(1)
+            raw_rest = m_item.group(2).strip()
+            if raw_rest:
+                rest = raw_rest.replace("-", " ").replace("_", " ").replace("::", " : ")
+                return f"{int(num)} — {rest}"
+            return f"Item {int(num)}"
+
+        m_sdd = re.search(r"::sdd(?:-|::)0*(\d+)[_-]?(.*)$", tag, re.IGNORECASE)
+        if m_sdd:
+            num = m_sdd.group(1)
+            raw_rest = m_sdd.group(2).strip()
+            if raw_rest:
+                rest = raw_rest.replace("-", " ").replace("_", " ").replace("::", " : ")
+                return f"{num} — {rest}"
+            return f"SDD {num}"
+
+        parts = tag.split('::')
+        if len(parts) > 2 and parts[0] == "EDN" and (parts[1].upper().startswith("SDD") or parts[1].upper().startswith("SSDD")):
+            return " : ".join(parts[2:]).replace("-", " ").replace("_", " ")
+
+        if "::" in tag:
+            return tag.split("::")[-1].replace("-", " ").replace("_", " ")
+    except Exception:
+        pass
+    return tag
 
 
 def _get_all_available_decks():
@@ -505,24 +542,7 @@ def collect_stats_for_tag(tag, window_days=30, only_rang=None, exclude_rang=None
     if studied_total_ratio > 1.0: studied_total_ratio = 1.0
     
     # Display Name Formatting
-    # Expected tag: EDN::item-027-Risques-fœtaux -> 27 — Risques fœtaux
-    display_name = tag
-    try:
-        if "::item-" in tag:
-            parts = tag.split("::item-")[-1].split("-", 1)
-            if len(parts) == 2:
-                num = parts[0]
-                rest = parts[1].replace("-", " ").replace("_", " ").replace("::", " : ")
-                display_name = f"{int(num)} — {rest}"
-        elif "::SDD-" in tag:
-             # EDN::SDD-111-Saignement... -> 111 — Saignement...
-             parts = tag.split("::SDD-")[-1].split("-", 1)
-             if len(parts) == 2:
-                 num = parts[0] # 111
-                 rest = parts[1].replace("-", " ").replace("_", " ").replace("::", " : ")
-                 display_name = f"{num} — {rest}"
-    except Exception:
-        pass
+    display_name = format_item_or_sdd_display_name(tag)
 
     difficulty, comps = compute_item_difficulty_for_cards(card_objs, window_days=window_days)
     
@@ -575,39 +595,19 @@ def _collect_overview_original(mode='items', only_rang=None, exclude_rang=None, 
     items = []
     for u in units:
         # Strict hierarchy check: if include_children is False, skip tags that look like children
-        # For EDN items: EDN::item-XXX is parent. EDN::item-XXX::Child is child.
+        # For EDN items: EDN::item-XXX (legacy) / EDN::item::XXX (new) is parent. Subparts are children.
         if not include_children and mode == 'items':
-            # Check if it has 3 parts (EDN, item-XXX, Child)
-            if u.count('::') > 1:
+            max_colons = 2 if "::item::" in u.lower() else 1
+            if u.count('::') > max_colons:
                 continue
         
         # For Subjects/SDD: Standard is TopLevel parent.
         if not include_children and mode != 'items':
-             # If exclude_children, we want ONLY depth 2 for "SDD-XXX" style 
-             if u.count('::') >= 2:
+             max_colons = 2 if ("::sdd::" in u.lower() or "::ssdd::" in u.lower()) else 1
+             if u.count('::') > max_colons:
                   continue
 
-        def format_name(t):
-            name = t
-            try:
-                if "::item-" in t:
-                    parts = t.split("::item-")[-1].split("-", 1)
-                    if len(parts) == 2:
-                        return f"{int(parts[0])} — {parts[1].replace('-', ' ').replace('_', ' ').replace('::', ' : ')}"
-                elif "::SDD-" in t:
-                     parts = t.split("::SDD-")[-1].split("-", 1)
-                     if len(parts) == 2:
-                         return f"{parts[0]} — {parts[1].replace('-', ' ').replace('_', ' ').replace('::', ' : ')}"
-                
-                parts = t.split('::')
-                if len(parts) > 2 and parts[0] == "EDN" and (parts[1].startswith("SDD") or parts[1].startswith("SSDD")):
-                    return " : ".join(parts[2:]).replace("-", " ").replace("_", " ")
-                
-                if "::" in t:
-                    return t.split("::")[-1].replace("-", " ").replace("_", " ")
-            except:
-                 pass
-            return name
+        format_name = format_item_or_sdd_display_name
 
         stats = collect_stats_for_tag(u, window_days=window_days, only_rang=only_rang, exclude_rang=exclude_rang, mature_ivl=mature_ivl, subject_filter=subject_filter, exclude_pediatric=exclude_pediatric)
         
@@ -765,12 +765,12 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
             filter_roots = {s.lower() for s in subject_filter}
             target_tags = [u for u in target_tags if u.lower() in filter_roots]
     
-    # Filter out children if needed
+    # Filter out children if needed (compatible avec formats legacy et hiérarchiques)
     if not include_children:
         if mode == 'items':
-            target_tags = [t for t in target_tags if t.count('::') <= 1]
+            target_tags = [t for t in target_tags if (t.count('::') <= 2 if "::item::" in t.lower() else t.count('::') <= 1)]
         else:
-            target_tags = [t for t in target_tags if t.count('::') < 2]
+            target_tags = [t for t in target_tags if (t.count('::') <= 2 if ("::sdd::" in t.lower() or "::ssdd::" in t.lower()) else t.count('::') < 2)]
     
     
     # ========== SINGLE SQL QUERY ==========
@@ -1026,23 +1026,7 @@ def collect_overview_batch(mode='items', only_rang=None, exclude_rang=None, incl
     # ========== BUILD RESULTS ==========
     build_start = time.time()
     items = []
-    
-    def format_name(t):
-        name = t
-        try:
-            if "::item-" in t:
-                parts = t.split("::item-")[-1].split("-", 1)
-                if len(parts) == 2:
-                    return f"{int(parts[0])} — {parts[1].replace('-', ' ').replace('_', ' ').replace('::', ' : ')}"
-            elif "::SDD-" in t:
-                parts = t.split("::SDD-")[-1].split("-", 1)
-                if len(parts) == 2:
-                    return f"{parts[0]} — {parts[1].replace('-', ' ').replace('_', ' ').replace('::', ' : ')}"
-            if "::" in t:
-                return t.split("::")[-1].replace("-", " ").replace("_", " ")
-        except:
-            pass
-        return name
+    format_name = format_item_or_sdd_display_name
     
     for tag_l, stat in stats_by_tag.items():
         counts = stat['counts']

@@ -12,7 +12,8 @@ ADDON_PATH = os.path.dirname(os.path.abspath(__file__))
 INDEX_HTML = os.path.join(ADDON_PATH, "web", "index.html")
 
 # Register web exports to allow serving files from the addon folder
-mw.addonManager.setWebExports(__name__, r".+\.(css|js|png|jpg|jpeg|svg|json|html)$")
+if mw and hasattr(mw, "addonManager"):
+    mw.addonManager.setWebExports(__name__, r".+\.(css|js|png|jpg|jpeg|svg|json|html)$")
 
 
 def open_tag_in_browser(tag: str) -> None:
@@ -346,7 +347,15 @@ def open_edn_progress() -> None:
                 
                 all_tags = mw.col.tags.all()
                 # Filter to show only relevant tags (EDN items, SDD, Matière)
-                item_tags = [t for t in all_tags if t.startswith("EDN::item-") or t.startswith("EDN::SDD") or t.startswith("Matière::")]
+                item_tags = [
+                    t for t in all_tags
+                    if t.lower().startswith("edn::item-")
+                    or t.lower().startswith("edn::item::")
+                    or t.lower().startswith("edn::sdd")
+                    or t.lower().startswith("edn::ssdd")
+                    or t.lower().startswith("matière::")
+                    or t.lower().startswith("matiere::")
+                ]
                 
                 dialog = TagSelectorDialog(
                     parent=mw,
@@ -358,13 +367,8 @@ def open_edn_progress() -> None:
                 if dialog.exec() and dialog.sel_keys_list:
                     tag = dialog.sel_keys_list[0]
                     # Get display name
-                    display_name = tag
-                    if "::item-" in tag:
-                        try:
-                            parts = tag.split("::item-")[-1].split("-", 1)
-                            if len(parts) == 2:
-                                display_name = f"{int(parts[0])} — {parts[1].replace('-', ' ')}"
-                        except: pass
+                    from .stats_backend import format_item_or_sdd_display_name
+                    display_name = format_item_or_sdd_display_name(tag)
                     # Send back to JS
                     web.eval(f"window.EDN_addCustomTag({json.dumps(tag)}, {json.dumps(display_name)});")
                 return
@@ -567,5 +571,7 @@ def on_profile_will_close() -> None:
             pass
 
 
-gui_hooks.main_window_did_init.append(init_edn_progress)
-gui_hooks.profile_will_close.append(on_profile_will_close)
+if 'gui_hooks' in globals() and hasattr(gui_hooks, 'main_window_did_init'):
+    gui_hooks.main_window_did_init.append(init_edn_progress)
+if 'gui_hooks' in globals() and hasattr(gui_hooks, 'profile_will_close'):
+    gui_hooks.profile_will_close.append(on_profile_will_close)
