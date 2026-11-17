@@ -1214,13 +1214,14 @@
     }
 
     const STANDARD_EDN_SUBJECTS = [
-      "Anatomie", "Anatomo-pathologie", "Antibiothérapie", "Cardiologie",
+      "Anatomie", "Anesthésie", "Antibiothérapie", "CMF", "Cardiologie",
       "Dermatologie", "Douleur", "Endocrinologie", "Gastro-entérologie",
-      "Gynécologie", "Gériatrie", "Hématologie", "Imagerie",
-      "Immunologie", "Infectiologie", "LCA", "EDN:LCA", "EDN::LCA", "Locomoteur", "MPR", "Neurologie",
-      "Nutrition", "Néphrologie", "Oncologie", "Ophtalmologie", "ORL",
-      "Pharmacologie", "Physiologie", "Pneumologie", "Psychiatrie",
-      "Pédiatrie", "Santé-publique", "Urgences", "Urologie"
+      "Gynécologie", "Gériatrie", "Hématologie", "Imagerie", "Immunologie",
+      "Infectiologie", "Locomoteur", "MPR", "Neurochirurgie", "Neurologie",
+      "Nutrition", "Néphrologie", "ORL", "Oncologie", "Ophtalmologie",
+      "Orthopédie", "Pharmacologie", "Physiologie", "Pneumologie",
+      "Psychiatrie", "Pédiatrie", "Rhumatologie", "Réanimation",
+      "Santé-publique", "Urgences", "Urologie"
     ];
 
     // DOM Elements
@@ -3016,10 +3017,20 @@
         {}).length === 0);
 
       if (isIncomingEmpty) {
-        console.warn("Python state is empty. Maintaining current session cache.");
+        console.warn("Python state is empty. Applying default Actu preset.");
+        window.EDN_STATE_CACHE.presets = { "Actu": [...STANDARD_EDN_SUBJECTS] };
+        window.EDN_STATE_CACHE.settings = {
+          enabledSubjects: [...STANDARD_EDN_SUBJECTS],
+          selectedSubjects: [...STANDARD_EDN_SUBJECTS],
+          selectedPreset: "Actu"
+        };
       } else {
         // Merge or update cache
-        if (state.presets) window.EDN_STATE_CACHE.presets = state.presets;
+        if (state.presets && Object.keys(state.presets).length > 0) {
+          window.EDN_STATE_CACHE.presets = state.presets;
+        } else {
+          window.EDN_STATE_CACHE.presets = { "Actu": [...STANDARD_EDN_SUBJECTS] };
+        }
         if (state.settings) window.EDN_STATE_CACHE.settings = state.settings;
       }
 

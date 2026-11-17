@@ -9,6 +9,45 @@ SUSPEND_MASK_THRESHOLD = 0.8
 MASTERED_THRESHOLD = 0.5
 DESUSPENDED_THRESHOLD = 0.40
 
+# Référence canonique des matières EDN (alignée sur le preset "Actu")
+EDN_ACTU_SUBJECTS = [
+    "Anatomie",
+    "Anesthésie",
+    "Antibiothérapie",
+    "CMF",
+    "Cardiologie",
+    "Dermatologie",
+    "Douleur",
+    "Endocrinologie",
+    "Gastro-entérologie",
+    "Gynécologie",
+    "Gériatrie",
+    "Hématologie",
+    "Imagerie",
+    "Immunologie",
+    "Infectiologie",
+    "Locomoteur",
+    "MPR",
+    "Neurochirurgie",
+    "Neurologie",
+    "Nutrition",
+    "Néphrologie",
+    "ORL",
+    "Oncologie",
+    "Ophtalmologie",
+    "Orthopédie",
+    "Pharmacologie",
+    "Physiologie",
+    "Pneumologie",
+    "Psychiatrie",
+    "Pédiatrie",
+    "Rhumatologie",
+    "Réanimation",
+    "Santé-publique",
+    "Urgences",
+    "Urologie",
+]
+
 def _now_ms():
     return int(time.time() * 1000)
 

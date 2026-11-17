@@ -186,7 +186,14 @@ def open_edn_progress() -> None:
                             with open(state_file, "r", encoding="utf-8") as f:
                                 st = json.load(f)
                                 saved_settings = st.get("settings", {})
-                        except: pass
+                        except Exception:
+                            pass
+                    if not saved_settings:
+                        saved_settings = {
+                            "enabledSubjects": list(stats_backend.EDN_ACTU_SUBJECTS),
+                            "selectedSubjects": list(stats_backend.EDN_ACTU_SUBJECTS),
+                            "selectedPreset": "Actu",
+                        }
                     
                     mode = saved_settings.get("mode", "items")
                     rang = saved_settings.get("rang", "all")
@@ -255,6 +262,15 @@ def open_edn_progress() -> None:
                     
                     if not isinstance(state, dict):
                         state = {"presets": {}, "settings": {}}
+                    default_subjects = list(stats_backend.EDN_ACTU_SUBJECTS)
+                    if not state.get("presets"):
+                        state["presets"] = {"Actu": list(default_subjects)}
+                    if not isinstance(state.get("settings"), dict) or not state["settings"]:
+                        state["settings"] = {
+                            "enabledSubjects": list(default_subjects),
+                            "selectedSubjects": list(default_subjects),
+                            "selectedPreset": "Actu",
+                        }
                     if "meta" not in state:
                         state["meta"] = {}
                     state["meta"]["available_subjects"] = stats_backend._all_subject_tags()
